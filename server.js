@@ -261,6 +261,8 @@ wss.on('connection', async (ws, req) => {
 
 });
 
-server.listen(3001, () => {
+const port = process.env.PORT || 3001
+
+server.listen(port, () => {
   console.log('Listening on %d', server.address().port);
 });
