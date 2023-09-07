@@ -1,3 +1,6 @@
+console.log('Server.js is starting...');
+
+
 require('dotenv').config();
 const url = require('url');
 
