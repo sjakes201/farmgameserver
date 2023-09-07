@@ -105,7 +105,7 @@ wss.on('connection', async (ws, req) => {
     ws.on('message', async (message) => {
       try {
 
-        console.log(`Received message => ${message}`);
+        // console.log(`Received message => ${message}`);
         const parsedMessage = JSON.parse(message);
 
         const action = parsedMessage.action;
@@ -256,7 +256,7 @@ wss.on('connection', async (ws, req) => {
     });
 
     ws.on('close', () => {
-      console.log('Client disconnected');
+      console.log(`Client ${UserID} disconnected`);
     });
   } catch (error) {
     console.log(error)
@@ -264,7 +264,7 @@ wss.on('connection', async (ws, req) => {
 
 });
 
-const port = process.env.PORT || 3001
+const port = process.env.PORT || 8080
 
 server.listen(port, () => {
   console.log('Listening on %d', server.address().port);
