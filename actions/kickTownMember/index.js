@@ -1,0 +1,109 @@
+const sql = require('mssql');
+const { poolPromise } = require('../db'); 
+
+module.exports = async function (ws, actionData) {
+
+    // const UserID = ws.UserID;
+    const UserID = actionData.UserID;
+
+
+    let kickedMember = actionData.kickedMember;
+
+    let connection;
+    let transaction;
+    try {
+        connection = await poolPromise;
+
+        transaction = new sql.Transaction(connection);
+        await transaction.begin()
+        const request = new sql.Request(transaction);
+        request.input(`UserID`, sql.Int, UserID);
+        request.input(`kickedMember`, sql.VarChar(32), kickedMember)
+        request.multiple = true;
+
+        // Get UserID of kicked player (SQL +Logins)
+        let kickedUserIDQuery = await request.query(`
+        SELECT UserID FROM Logins WHERE Username = @kickedMember
+        `)
+        if (kickedUserIDQuery.recordset.length === 0) {
+            await transaction.rollback();
+            ws.send(JSON.stringify( {
+                status: 400,
+                body: {
+                    message: 'Attempted to kick user that does not exist'
+                }
+            }));
+            return;
+        }
+        let kickedUserID = kickedUserIDQuery.recordset[0].UserID;
+        if(kickedUserID === UserID) {
+            ws.send(JSON.stringify( {
+                status: 400,
+                body: {
+                    message: "You cannot kick yourself out of a town, must use leave function"
+                }
+            }));
+            await transaction.rollback();
+            return;
+        }
+        request.input(`kickedUserID`, sql.Int, kickedUserID)
+
+        // Check that you are both in the town and set the victim to -1 townID (SQL -Logins +Profiles)
+        let inTownQuery = await request.query(`
+            SELECT townID FROM Profiles WHERE UserID = @kickedUserID
+            SELECT townID FROM Profiles WHERE UserID = @UserID
+            UPDATE Profiles SET townID = -1 WHERE UserID = @kickedUserID
+        `)
+        let kickedUserTownID = inTownQuery.recordsets[0][0].townID;
+        let leaderTownID = inTownQuery.recordsets[1][0].townID;
+        if (kickedUserTownID !== leaderTownID || kickedUserTownID === -1) {
+            await transaction.rollback();
+            ws.send(JSON.stringify( {
+                status: 400,
+                body: {
+                    message: `${kickedMember} is not in the same town as you or is not in a town`
+                }
+            }));
+            return;
+        }
+
+        // Check that you are the leader of the town and decrement member count (SQL -Profiles +Towns)
+        let updateTownQuery = await request.query(`
+            UPDATE Towns SET memberCount = memberCount - 1 WHERE townID = ${leaderTownID}
+            SELECT leader FROM Towns WHERE townID = ${leaderTownID}
+        `)
+        if (updateTownQuery.recordset[0].leader !== UserID) {
+            await transaction.rollback();
+            ws.send(JSON.stringify( {
+                status: 400,
+                body: {
+                    message: "You are not the leader of this town"
+                }
+            }));
+            return;
+        }
+
+
+        await transaction.commit();
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback()
+        ws.send(JSON.stringify( {
+            status: 500,
+            body: {
+                message: "UNCAUGHT ERROR"
+            }
+        }));
+        return;
+    }
+
+    ws.send(JSON.stringify( {
+        // status: 200, /* Defaults to 200 */
+        body: {}
+    }));
+}
+
+
+
+
+
