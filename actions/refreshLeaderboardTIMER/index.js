@@ -1,8 +1,9 @@
 const CONSTANTS = require('../shared/CONSTANTS');
 const sql = require('mssql');
+const { poolPromise } = require('../../db'); 
 
-module.exports = async function (context, myTimer) {
-    if (process.env.NODE_ENV === 'testing') {
+module.exports = async function () {
+    if (process.env.NODE_ENV === 'TESTING') {
         console.log("TESTING ENV, NOT RUNNING")
         return;
     }
@@ -112,8 +113,6 @@ module.exports = async function (context, myTimer) {
     } catch (error) {
         if (transaction) await transaction.rollback()
         console.log("DATABASE CONNECTION FAILURE");
-    } finally {
-        ;
     }
 
     // UPDATE ALLTIME LEADERBOARD

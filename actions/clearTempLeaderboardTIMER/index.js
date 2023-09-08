@@ -1,16 +1,12 @@
 const sql = require('mssql');
+const { poolPromise } = require('../../db'); 
 
-module.exports = async function (context, myTimer) {
-    if(process.env.NODE_ENV === "testing") {
+module.exports = async function () {
+    if(process.env.NODE_ENV === "TESTING") {
         console.log("TESTING ENV, NOT RUNNING")
-        ws.send(JSON.stringify( {
-            status: 200,
-            body: {
-                message: "TEST ENV NOT RUNNING"
-            }
-        }));
         return;
     }
+
     let connection;
     let transaction;
     try {
@@ -34,10 +30,8 @@ module.exports = async function (context, myTimer) {
     } catch (error) {
         if (transaction) await transaction.rollback()
         console.log(error);
-    } finally {
-        if (connection) await connection.close();
-    }
-};
+    } 
+}
 
 
 

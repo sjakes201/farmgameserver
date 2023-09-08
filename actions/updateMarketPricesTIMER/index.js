@@ -1,17 +1,12 @@
 const CONSTANTS = require('../shared/CONSTANTS');
 const sql = require('mssql');
+const { poolPromise } = require('../../db'); 
 
-module.exports = async function (context, myTimer) {
-    if(process.env.NODE_ENV === "testing") {
-        console.log("TESTING ENV, NOT RUNNING")
-        ws.send(JSON.stringify( {
-            status: 200,
-            body: {
-                message: "TEST ENV NOT RUNNING"
-            }
-        }));
-        return;
-    }
+module.exports = async function () {
+    // if(process.env.NODE_ENV === "TESTING") {
+    //     console.log("TESTING ENV, NOT RUNNING")
+    //     return;
+    // }
 
     
     let connection;
@@ -115,21 +110,13 @@ module.exports = async function (context, myTimer) {
 
         await request.query(clear_market_vol_query);
 
-        // console.log('old prices:')
-        // console.log(old_price)
-
-        // console.log('new prices:')
-        // console.log(update_price_query)
         await transaction.commit()
 
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback();
-    } finally {
-        ;
-
-    }
-};
+    } 
+}
 
 
 

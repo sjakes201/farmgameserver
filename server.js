@@ -1,10 +1,8 @@
 console.log('Server.js is starting...');
-
-
 require('dotenv').config();
-const url = require('url');
 
-// All actions in external files
+
+// Action functions
 const prices = require('./actions/prices/index');
 const tempAuth = require('./actions/tempAuth/index')
 const inventoryAll = require('./actions/inventoryAll/index')
@@ -41,8 +39,15 @@ const forgotPassEmail = require('./actions/forgotPassEmail/index')
 const userLogin = require('./actions/userLogin/index')
 const userRegister = require('./actions/userRegister/index')
 
-
+// Other imports
+const scheduleTasks = require('./cronJobs');  
+const url = require('url');
 const jwt = require('jsonwebtoken');
+
+
+scheduleTasks();
+
+
 
 function decodeUserID(token) {
   try {
@@ -60,7 +65,6 @@ function decodeUserID(token) {
     };
   }
 }
-
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -256,7 +260,7 @@ wss.on('connection', async (ws, req) => {
     });
 
     ws.on('close', () => {
-      console.log(`Client ${UserID} disconnected`);
+      console.log(`Client ${ws.UserID} disconnected`);
     });
   } catch (error) {
     console.log(error)
