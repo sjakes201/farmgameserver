@@ -3,10 +3,10 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db'); 
 
 module.exports = async function () {
-    // if(process.env.NODE_ENV === "TESTING") {
-    //     console.log("TESTING ENV, NOT RUNNING")
-    //     return;
-    // }
+    if(process.env.NODE_ENV === "TESTING") {
+        console.log("TESTING ENV, NOT RUNNING")
+        return;
+    }
 
     
     let connection;

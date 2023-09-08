@@ -21,6 +21,13 @@ module.exports = async function (ws, actionData) {
             (Animal_type = 'cow' OR Animal_type = 'yak' OR Animal_type = 'sheep' OR Animal_type = 'goat' OR Animal_type = 'llama')`);
         let coopResult = await request.query(`SELECT * FROM Animals WHERE UserID = @UserID AND 
         (Animal_type = 'chicken' OR Animal_type = 'duck' OR Animal_type = 'quail' OR Animal_type = 'bees' OR Animal_type = 'ostrich' OR Animal_type = 'kiwi')`);
+
+        barnResult.recordset.forEach((e) => {
+            delete e.UserID
+        })
+        coopResult.recordset.forEach((e) => {
+            delete e.UserID
+        })
         return {
             barnResult: barnResult.recordset,
             coopResult: coopResult.recordset
@@ -32,7 +39,7 @@ module.exports = async function (ws, actionData) {
         return {
             message: "DATABASE connection error in /allAnimals call"
         };
-    } 
+    }
 }
 
 
