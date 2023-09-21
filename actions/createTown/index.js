@@ -1,23 +1,18 @@
 const sql = require('mssql');
-const { poolPromise } = require('../db'); 
+const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO');
 
 module.exports = async function (ws, actionData) {
 
-    // const UserID = ws.UserID;
-    const UserID = actionData.UserID;
-
+    const UserID = ws.UserID;
 
     // INPUTS
     let townName = actionData.townName;
-    if (typeof townName !== 'string' || townName.length > 32) {
-        ws.send(JSON.stringify( {
-            status: 400,
-            body: {
-                message: "Invalid town name, must be string 32 chars max"
-            }
-        }));
-        return;
+    const isValid = /^[A-Za-z0-9._]{4,32}$/.test(townName);
+    if (typeof townName !== 'string' || !isValid) {
+        return {
+            message: "Invalid town name, must be string [4,32] chars and include letters, numbers, period and underscore only"
+        };
     }
 
     let connection;
@@ -56,13 +51,9 @@ module.exports = async function (ws, actionData) {
                 await connection.query(`
                 DELETE FROM Towns WHERE townID = ${generatedTownID}
                 `)
-                ws.send(JSON.stringify( {
-                    status: 400,
-                    body: {
-                        message: "Already in a town, leave before creating a new one"
-                    }
-                }));
-                return;
+                return {
+                    message: "Already in a town, leave before creating a new one"
+                };
             }
 
             // Claim leadership of town after profile verficiation of not already being in a town
@@ -71,26 +62,30 @@ module.exports = async function (ws, actionData) {
             `)
 
 
-            // MSSQL Create row in town goals, using townID (SQL -Towns +TownGoals)
+            // MSSQL Create row in town goals, using townID (SQL -Towns +-TownGoals +TownContributions)
             await request.query(`
             INSERT INTO TownGoals (townID, goal_1, goal_2, goal_3, goal_4, goal_5, goal_6, goal_7, goal_8)
-            VALUES (@townID, '${TOWNINFO.starterGoals.goal_1}','${TOWNINFO.starterGoals.goal_2}','${TOWNINFO.starterGoals.goal_3}','${TOWNINFO.starterGoals.goal_4}', '${TOWNINFO.starterGoals.goal_5}', '${TOWNINFO.starterGoals.goal_6}', '${TOWNINFO.starterGoals.goal_7}', '${TOWNINFO.starterGoals.goal_8}')
+            VALUES (@townID, 
+            '${TOWNINFO.starterGoals.goal_1} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_1]}',
+            '${TOWNINFO.starterGoals.goal_2} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_2]}',
+            '${TOWNINFO.starterGoals.goal_3} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_3]}',
+            '${TOWNINFO.starterGoals.goal_4} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_4]}',
+            '${TOWNINFO.starterGoals.goal_5} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_5]}',
+            '${TOWNINFO.starterGoals.goal_6} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_6]}', 
+            '${TOWNINFO.starterGoals.goal_7} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_7]}',
+            '${TOWNINFO.starterGoals.goal_8} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_8]}'
+            )
+            UPDATE TownContributions SET townID = @townID WHERE UserID = @UserID
             `)
 
             await transaction.commit()
-            ws.send(JSON.stringify( {
-                // status: 200, /* Defaults to 200 */
-                body: { msg: 'SUCCESS' }
-            }));
+            return { message: 'SUCCESS' }
         } catch (sqlError) {
             if (sqlError.number === 2601 || sqlError.number === 2627) {
                 // Unique constraint violation error (error code 2601 or 2627)
-                ws.send(JSON.stringify( {
-                    status: 400,
-                    body: {
-                        message: "Unique constraint violation. The provided townName is not unique or the leader already owns a town."
-                    }
-                }));
+                return {
+                    message: "Unique constraint violation. The provided townName is not unique or the leader already owns a town."
+                }
             } else {
                 // Other SQL error
                 throw sqlError; // Re-throw the error for generic error handling
@@ -99,14 +94,10 @@ module.exports = async function (ws, actionData) {
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback()
-        ws.send(JSON.stringify( {
-            status: 500,
-            body: {
-                message: "UNCAUGHT ERROR"
-            }
-        }));
-        return;
-    } 
+        return {
+            message: "UNCAUGHT ERROR"
+        };
+    }
 
 
 

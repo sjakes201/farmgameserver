@@ -2,14 +2,15 @@ const CONSTANTS = require('../shared/CONSTANTS');
 const UPGRADES = require('../shared/UPGRADES');
 const CROPINFO = require('../shared/CROPINFO')
 const MACHINESINFO = require('../shared/MACHINESINFO')
+const TOWNINFO = require('../shared/TOWNINFO')
 const sql = require('mssql');
-const { poolPromise } = require('../../db'); 
+const { poolPromise } = require('../../db');
 
+const townGoalContribute = require(`../shared/townGoalContribute`);
 
 module.exports = async function (ws, actionData) {
 
     const UserID = ws.UserID;
-    // const UserID = 192;
 
     // Multitile input: receive an array of objects, one object per tile, each tile has tileID: which is the tile id [{tileID: 2}, {tileID: 4}, {tileID: 5}]
     const tiles = actionData.tiles;
@@ -28,10 +29,24 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
-        let upgrades = await connection.query(`SELECT * FROM Upgrades WHERE UserID = ${UserID}`);
-        let xpQuery = await connection.query(`SELECT XP FROM Profiles WHERE UserID = ${UserID}`)
+        let userQuery = await connection.query(`
+        SELECT 
+            P.townID, P.XP,
+            T.growthPerkLevel, T.partsPerkLevel
+        FROM 
+            Profiles P
+        INNER JOIN 
+            Towns T ON P.townID = T.townID
+        WHERE 
+            P.UserID = ${UserID};
+        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+        `);
+        let upgrades = userQuery.recordsets[1][0]
+        let townPerks = userQuery.recordsets[0][0]
+        let userXP = userQuery.recordsets[0][0].XP;
 
-        if (xpQuery.recordset[0].XP < 0) {
+
+        if (userXP < 0) {
             // TODO: set xp for level you unlock this feature, IF using only for multiharvest scythe
         }
 
@@ -60,8 +75,8 @@ module.exports = async function (ws, actionData) {
         let tilesToCheck = allTilesContent.recordset.filter((tile) => tile.CropID !== -1);
 
         // check all tiles for whether they're done
-        let growthTableName = "GrowthTimes".concat(upgrades.recordset[0].plantGrowthTimeUpgrade);
-        let quantityTableName = "PlantQuantityYields".concat(upgrades.recordset[0].plantHarvestQuantityUpgrade);
+        let growthTableName = "GrowthTimes".concat(upgrades.plantGrowthTimeUpgrade);
+        let quantityTableName = "PlantQuantityYields".concat(upgrades.plantHarvestQuantityUpgrade);
         let curTime = Date.now();
 
         // SUMS AND QUERIES BUILD WHILE GOING OVER EACH TILE
@@ -100,6 +115,11 @@ module.exports = async function (ws, actionData) {
                     activeFertilizer = true;
                 }
                 timeFertRemainingSecs = (CONSTANTS.VALUES.TimeFeritilizeDuration - (curTime - fertilizedTime)) / 1000
+            }
+            if (townPerks?.growthPerkLevel) {
+                let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+                let boostChange = 1 - boostPercent;
+                secsNeeded *= boostChange;
             }
 
             if (secsPassed >= secsNeeded) {
@@ -150,6 +170,13 @@ module.exports = async function (ws, actionData) {
                         // active time fertilizer that has not expired
                         timeSkip /= 2;
                     }
+
+                    if (townPerks?.growthPerkLevel) {
+                        let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+                        let boostChange = 1 - boostPercent;
+                        timeSkip *= boostChange;
+                    }
+
                     let adjustedPlantTime = Date.now() - timeSkip - 200;
 
                     if (!activeFertilizer) {
@@ -198,6 +225,11 @@ module.exports = async function (ws, actionData) {
                 } else {
                     // missing in config
                     chance = 0.01;
+                }
+                if (townPerks?.partsPerkLevel) {
+                    let boostPercent = TOWNINFO.upgradeBoosts.partsPerkLevel[townPerks.partsPerkLevel];
+                    let boostChange = 1 + boostPercent;
+                    chance *= boostChange;
                 }
                 let randomPart = null;
                 if (randChance <= chance) {
@@ -271,7 +303,6 @@ module.exports = async function (ws, actionData) {
 
         let amountToAdd;
         for (const good in cropsSum) {
-
             if (good === goal1[0]) {
                 if (cropsSum[good] > 0) {
                     amountToAdd = cropsSum[good];
@@ -341,6 +372,13 @@ module.exports = async function (ws, actionData) {
 
 
         await transaction.commit();
+        Object.keys(cropsSum).forEach((crop) => {
+            try {
+                townGoalContribute(UserID, crop, cropsSum[crop])
+            } catch (error) {
+                console.log(error)
+            }
+        })
         return {
             message: "SUCCESS",
             updatedTiles: updatedTiles,
@@ -350,10 +388,10 @@ module.exports = async function (ws, actionData) {
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback()
-        return  {
+        return {
             message: "/multiHarvest error"
         }
-    } 
+    }
 }
 
 

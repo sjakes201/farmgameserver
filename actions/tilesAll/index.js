@@ -24,7 +24,7 @@ module.exports = async function (ws, actionData) {
         }
         return result.recordset
     } catch (error) {
-        context.error("/all endpoint error: ", error);
+        console.error("/all endpoint error: ", error);
         return {
             message: error
         };

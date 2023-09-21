@@ -1,8 +1,10 @@
 const sql = require('mssql');
-const { poolPromise } = require('../../db'); 
+const { poolPromise } = require('../../db');
 
 const CONSTANTS = require('../shared/CONSTANTS');
 const UPGRADES = require('../shared/UPGRADES');
+const townGoalContribute = require(`../shared/townGoalContribute`);
+const TOWNINFO = require('../shared/TOWNINFO');
 
 module.exports = async function (ws, actionData) {
 
@@ -10,22 +12,39 @@ module.exports = async function (ws, actionData) {
     let AnimalID = actionData?.AnimalID;
     // GET USER ID
     const UserID = ws.UserID;
+    // Used later in townGoalContribute
+    let resultingGood;
+    let resultingQuantity;
 
 
     // COLLECT LOGIC
-
     let connection;
     let transaction;
+    let transactionStarted = false;
     try {
         connection = await poolPromise;
 
         // Query upgrades info outside transaction 
-        let upgrades = await connection.query(`SELECT * FROM Upgrades WHERE UserID = ${UserID}`);
-
+        
+        let userQuery = await connection.query(`
+        SELECT 
+            P.townID, 
+            T.animalPerkLevel
+        FROM 
+            Profiles P
+        INNER JOIN 
+            Towns T ON P.townID = T.townID
+        WHERE 
+            P.UserID = ${UserID};
+        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+        `);
+        let upgrades = userQuery.recordsets[1][0]
+        let townPerks = userQuery.recordsets[0][0]
 
         // Begin transaction
         transaction = new sql.Transaction(connection);
         await transaction.begin();
+        transactionStarted = true;
         const request = new sql.Request(transaction);
         request.input('UserID', sql.Int, UserID);
         request.input('AnimalID', sql.Int, parseInt(AnimalID));
@@ -44,9 +63,9 @@ module.exports = async function (ws, actionData) {
         }
 
         // Find out if animal is unlocked based on upgraeds
-        if (CONSTANTS.Permits.exoticAnimals.includes(animalInfo.recordset[0].Animal_type) && !upgrades.recordset[0].exoticPermit) {
+        if (CONSTANTS.Permits.exoticAnimals.includes(animalInfo.recordset[0].Animal_type) && !upgrades.exoticPermit) {
             await transaction.rollback();
-            return  {
+            return {
                 message: "NEED PERMIT"
             };
         }
@@ -58,12 +77,12 @@ module.exports = async function (ws, actionData) {
         let quantityUGLevel = 0;
         switch (location) {
             case 'coop':
-                collectUGLevel = upgrades.recordset[0].coopCollectTimeUpgrade;
-                quantityUGLevel = upgrades.recordset[0].coopCollectQuantityUpgrade;
+                collectUGLevel = upgrades.coopCollectTimeUpgrade;
+                quantityUGLevel = upgrades.coopCollectQuantityUpgrade;
                 break;
             case 'barn':
-                collectUGLevel = upgrades.recordset[0].barnCollectTimeUpgrade;
-                quantityUGLevel = upgrades.recordset[0].barnCollectQuantityUpgrade;
+                collectUGLevel = upgrades.barnCollectTimeUpgrade;
+                quantityUGLevel = upgrades.barnCollectQuantityUpgrade;
                 break;
         }
         let collectTableName = "AnimalCollectTimes" + collectUGLevel;
@@ -73,6 +92,13 @@ module.exports = async function (ws, actionData) {
         let last_produce = animalInfo.recordset[0].Last_produce;
         let timeNeeded = UPGRADES[collectTableName][animalInfo.recordset[0].Animal_type][0]
 
+        if(townPerks?.animalPerkLevel) {
+            let boostPercent = TOWNINFO.upgradeBoosts.animalPerkLevel[townPerks.animalPerkLevel];
+            let boostChange = 1 - boostPercent;
+            timeNeeded *= boostChange;
+        }
+
+
         const curTime = Date.now();
         let secsPassed = (curTime - last_produce) / 1000;
         // buffer for less 400's
@@ -81,6 +107,7 @@ module.exports = async function (ws, actionData) {
         if (secsPassed >= timeNeeded) {
             // Enough time has passed
             let [produce, qty] = UPGRADES[quantityTableName][animalInfo.recordset[0].Animal_type];
+            resultingGood = produce; resultingQuantity = qty;
             request.input('curTime', sql.Decimal, curTime);
             request.input('xp', sql.Int, CONSTANTS.XP[produce])
 
@@ -93,7 +120,6 @@ module.exports = async function (ws, actionData) {
             }
             let newRandom = Math.round(Math.random() * 100) / 100;
             request.input('newRandom', sql.Float, newRandom)
-            console.log(`happiness: ${happiness} nextRandom: ${nextRandom} probOfExtra: ${probOfExtra}`)
 
             // If enough time has passed, update Last_produce and give yourself XP for collect (SQL -ANIMALS +PROFILES)
             let timeUpdate = await request.query(`
@@ -117,7 +143,9 @@ module.exports = async function (ws, actionData) {
             `)
             if (leaderboardUpdate.rowsAffected[0] === 0) {
                 await transaction.rollback();
-                throw "Failed to update leaderboards collect count"
+                return {
+                    message: "Failed to update leaderboard"
+                }
             }
 
             // Update ORDERS if applicable (SQL -TempLeaderboardSum -LeaderboardSum +ORDERS)
@@ -146,10 +174,12 @@ module.exports = async function (ws, actionData) {
                 finishedOrder = true;
             }
 
-
-
-
             await transaction.commit();
+            try {
+                townGoalContribute(UserID, resultingGood, resultingQuantity);
+            } catch (error) {
+                console.log(error)
+            }
             return {
                 ...timeUpdate.recordset[0],
                 wasReady: true,
@@ -159,7 +189,7 @@ module.exports = async function (ws, actionData) {
         } else {
             // not enough time passed
             await transaction.rollback();
-            return  {
+            return {
                 ...animalInfo.recordset[0],
                 wasReady: false,
                 finishedOrder: false,
@@ -169,12 +199,12 @@ module.exports = async function (ws, actionData) {
 
     } catch (error) {
         console.log(error)
-        if (transaction) await transaction.rollback()
+        if (transaction && transactionStarted) await transaction.rollback()
         console.log("Connection error in animal collect call")
         return {
             message: "Connection error in /collect call"
         };
-    } 
+    }
 
 
 }

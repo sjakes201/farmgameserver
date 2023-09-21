@@ -3,6 +3,7 @@ const { poolPromise } = require('../../db');
 const CONSTANTS = require('../shared/CONSTANTS');
 const UPGRADES = require('../shared/UPGRADES');
 const ORDERS = require('../shared/ORDERS');
+const TOWNINFO = require('../shared/TOWNINFO');
 
 const calcLevel = (XP) => {
     const lvlThresholds = CONSTANTS.xpToLevel;
@@ -47,6 +48,20 @@ module.exports = async function (ws, actionData) {
         let unlockedQuery = await connection.query(`SELECT XP FROM Profiles WHERE UserID = ${UserID}`)
         let upgradesQuery = await connection.query(`SELECT exoticPermit, deluxePermit FROM Upgrades WHERE UserID = ${UserID}`)
         let currentOrders = await connection.query(`SELECT * FROM ORDERS WHERE UserID = ${UserID}`)
+        let userQuery = await connection.query(`
+        SELECT 
+            P.townID, P.XP,
+            T.orderRefreshLevel
+        FROM 
+            Profiles P
+        INNER JOIN 
+            Towns T ON P.townID = T.townID
+        WHERE 
+            P.UserID = ${UserID};
+        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+        `);
+        let townPerks = userQuery.recordsets[0][0]
+        console.log(townPerks)
 
         let XP = unlockedQuery.recordset[0].XP, exoticPermit = upgradesQuery.recordset[0].exoticPermit, deluxePermit = upgradesQuery.recordset[0].deluxePermits;
         let unlockedGoods = [];
@@ -124,6 +139,11 @@ module.exports = async function (ws, actionData) {
                                                UPDATE Profiles SET LastOrderRefresh = ${Date.now()} WHERE UserID = @UserID`);
         let lastTime = lastRefresh.recordset[0].LastOrderRefresh;
         let timePassedMS = Date.now() - lastTime;
+        if(townPerks?.orderRefreshLevel) {
+            let boostPercent = TOWNINFO.upgradeBoosts.orderRefreshPerkLevel[townPerks.orderRefreshLevel];
+            let boostChange = 1 + boostPercent;
+            timePassedMS *= boostChange;
+        }
         if (timePassedMS >= CONSTANTS.VALUES.ORDER_REFRESH_COOLDOWN) {
             //enough time has passed
             let newReward = '';

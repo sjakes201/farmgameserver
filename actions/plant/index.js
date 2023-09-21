@@ -10,7 +10,6 @@ module.exports = async function (ws, actionData) {
     // GET USERID
     const UserID = ws.UserID;
 
-
     // CHECK INPUTS    
 
     let seed = actionData.seedName, cropID = CONSTANTS.ProduceIDs[seed], tileID = actionData.tileID;

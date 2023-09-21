@@ -124,7 +124,5 @@ module.exports = async function (ws, actionData) {
         return {
             message: "UNCAUGHT ERROR"
         };
-    } finally {
-
-    }
+    } 
 }

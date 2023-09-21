@@ -1,0 +1,45 @@
+const sql = require('mssql');
+const { poolPromise } = require('../../db');
+
+
+module.exports = async function (ws, actionData) {
+
+    let townName = actionData.townName;
+
+    let connection;
+    try {
+        connection = await poolPromise;
+        const request = new sql.Request(connection)
+        let data;
+        if(townName === undefined) {
+            let resultQuery = await request.query(`
+            SELECT TOP 10 townName, memberCount, townLogoNum, townXP, status
+            FROM Towns
+            WHERE STATUS = 'OPEN' AND memberCount < 25
+            ORDER BY NEWID();
+            `)
+            data = resultQuery.recordset;
+        } else {
+            request.input('townName', sql.VarChar(32), townName)
+            let resultQuery = await request.query(`
+            SELECT townName, memberCount, townLogoNum, townXP, status FROM Towns WHERE townName = @townName
+            SELECT TOP 10 * FROM Towns WHERE townName LIKE '%' + @townName + '%' AND townName != @townName
+            `)
+            data = [...resultQuery.recordsets[0], ...resultQuery.recordsets[1]]
+        }
+        return {
+            townArray: data
+        }
+
+    } catch (error) {
+        console.log(error);
+        return {
+            message: "UNCAUGHT ERROR"
+        };
+    }
+}
+
+
+
+
+

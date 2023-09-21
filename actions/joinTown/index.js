@@ -1,21 +1,16 @@
 const sql = require('mssql');
-const { poolPromise } = require('../db'); 
+const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO');
 
 module.exports = async function (ws, actionData) {
 
-    // const UserID = ws.UserID;
-    const UserID = actionData.UserID;
+    const UserID = ws.UserID;
 
     let townName = actionData.townName;
     if (typeof townName !== 'string' || townName.length > 32) {
-        ws.send(JSON.stringify( {
-            status: 400,
-            body: {
-                message: "Invalid town name, must be string 32 chars max"
-            }
-        }));
-        return;
+        return {
+            message: "Invalid town name, must be string 32 chars max"
+        };
     }
 
 
@@ -28,15 +23,10 @@ module.exports = async function (ws, actionData) {
         let nameRequest = new sql.Request(connection);
         nameRequest.input('townName', sql.VarChar(32), townName)
         let nameQuery = await nameRequest.query(`SELECT townID FROM Towns WHERE townName = @townName`)
-        console.log(nameQuery)
         if (nameQuery.recordset.length === 0) {
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: `No town goes by name ${townName}`
-                }
-            }));
-            return;
+            return {
+                message: `No town goes by name ${townName}`
+            };
         }
         let townID = nameQuery.recordset[0].townID;
 
@@ -54,52 +44,35 @@ module.exports = async function (ws, actionData) {
          `)
         if (changeTownQuery.recordset[0].townID !== -1) {
             await transaction.rollback();
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: "Already in a town, leave before joining a new one"
-                }
-            }));
-            return;
+            return {
+                message: "Already in a town, leave before joining a new one"
+            };
         }
 
-        // Check for open status, increment memberCount (SQL -Profiles +Towns)
+        // Check for open status, increment memberCount, set townContributions (SQL -Profiles +-Towns +TownContributions)
         let memberCountQuery = await request.query(`
         UPDATE Towns SET memberCount = memberCount + 1 WHERE townID = @townID
         SELECT memberCount, status FROM Towns WHERE townID = @townID
+        UPDATE TownContributions SET townID = @townID WHERE UserID = @UserID
         `)
         if (memberCountQuery.recordset[0].memberCount > TOWNINFO.VALUES.townMemberLimit || memberCountQuery.recordset[0].status !== 'OPEN') {
             await transaction.rollback();
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: `Town at capacity or closed to new members`
-                }
-            }));
-            return;
+            return {
+                message: `Town at capacity or closed to new members`
+            };
         }
-
-
-
         await transaction.commit();
+        return {
+            message: "SUCCESS"
+        }
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback()
-        ws.send(JSON.stringify( {
-            status: 500,
-            body: {
-                message: "UNCAUGHT ERROR"
-            }
-        }));
-        return;
-    } 
+        return {
+            message: "UNCAUGHT ERROR"
+        };
+    }
 
-    ws.send(JSON.stringify( {
-        // status: 200, /* Defaults to 200 */
-        body: {
-            message: "SUCCESS"
-        }
-    }));
 }
 
 

@@ -52,7 +52,6 @@ module.exports = async function (ws, actionData) {
         })
         tileQuery = tileQuery.substring(0, tileQuery.length - 4);
         tileQuery += `)`
-        console.log(tileQuery)
         let dbTiles = await request.query(tileQuery);
         let plantableCount = 0;
         let tilesToReturn = [];
@@ -78,9 +77,7 @@ module.exports = async function (ws, actionData) {
                 })
             }
         })
-        console.log(updateTilesQuery)
         let tilesResult = await request.query(updateTilesQuery);
-        console.log(tilesResult.recordsets)
 
         let seedQuery = await request.query(`
             UPDATE Inventory_SEEDS SET ${seed} = ${seed} - ${plantableCount} WHERE UserID = @UserID

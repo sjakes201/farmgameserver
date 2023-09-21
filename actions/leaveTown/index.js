@@ -1,11 +1,9 @@
 const sql = require('mssql');
-const { poolPromise } = require('../db'); 
+const { poolPromise } = require('../../db');
 
 module.exports = async function (ws, actionData) {
 
-    // const UserID = ws.UserID;
-    const UserID = actionData.UserID;
-
+    const UserID = ws.UserID;
 
     let connection;
     let transaction;
@@ -24,13 +22,9 @@ module.exports = async function (ws, actionData) {
         `)
         if (profileTownQuery.recordset[0].townID === -1) {
             await transaction.rollback();
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: "Not in a town"
-                }
-            }));
-            return;
+            return {
+                message: "Not in a town"
+            };
         }
 
         request.input('townID', sql.Int, profileTownQuery.recordset[0].townID)
@@ -41,13 +35,9 @@ module.exports = async function (ws, actionData) {
         `)
         if (memberCountQuery.recordset[0].leader === UserID && memberCountQuery.recordset[0].memberCount > 1) {
             await transaction.rollback();
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: "Must promote new leader before leaving nonempty town"
-                }
-            }));
-            return;
+            return {
+                message: "Must promote new leader before leaving nonempty town"
+            };
         }
         if (memberCountQuery.recordset[0].leader === UserID && memberCountQuery.recordset[0].memberCount === 1) {
             // They are the last person. Delete the town (SQL -Towns +TownGoals)
@@ -55,27 +45,26 @@ module.exports = async function (ws, actionData) {
                 DELETE FROM Towns WHERE townID = @townID
                 DELETE FROM TownGoals WHERE townID = @townID
             `)
-
         }
-        ws.send(JSON.stringify( {
-            // status: 200, /* Defaults to 200 */
-            body: {
-                message: "SUCCESS"
-            }
-        }));
-
+        // reset contributions and townID in contributions (SQL -TownGoals +TownContributions)
+        await request.query(`
+            UPDATE TownContributions SET 
+            townID = -1,
+            progress_1 = 0, progress_2 = 0, progress_3 = 0, progress_4 = 0, progress_5 = 0, progress_6 = 0, progress_7 = 0, progress_8 = 0,
+            unclaimed_1 = NULL, unclaimed_2 = NULL, unclaimed_3 = NULL, unclaimed_4 = NULL, unclaimed_5 = NULL, unclaimed_6 = NULL, unclaimed_7 = NULL, unclaimed_8 = NULL 
+            WHERE UserID = @UserID
+        `)
         await transaction.commit();
+        return {
+            message: "SUCCESS"
+        }
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback()
-        ws.send(JSON.stringify( {
-            status: 500,
-            body: {
-                message: "UNCAUGHT ERROR"
-            }
-        }));
-        return;
-    } 
+        return {
+            message: "UNCAUGHT ERROR"
+        };
+    }
 }
 
 

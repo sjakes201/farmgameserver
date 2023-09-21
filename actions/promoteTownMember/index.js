@@ -1,10 +1,10 @@
 const sql = require('mssql');
-const { poolPromise } = require('../db');
+const { poolPromise } = require('../../db');
 
 module.exports = async function (ws, actionData) {
-
-    // const UserID = ws.UserID;
-    const UserID = actionData.UserID;
+    // Currently only promotes to leader as there are no intermediary roles
+    
+    const UserID = ws.UserID;
 
     let newLeader = actionData.newLeader;
 
@@ -25,13 +25,9 @@ module.exports = async function (ws, actionData) {
         `)
         if (newLeaderIDQuery.recordset.length === 0) {
             await transaction.rollback();
-            ws.send(JSON.stringify({
-                status: 400,
-                body: {
-                    message: 'Attempted to promote user that does not exist'
-                }
-            }));
-            return;
+            return {
+                message: 'Attempted to promote user that does not exist'
+            };
         }
         let newLeaderID = newLeaderIDQuery.recordset[0].UserID;
         request.input(`newLeaderID`, sql.Int, newLeaderID)
@@ -45,13 +41,9 @@ module.exports = async function (ws, actionData) {
         let oldLeaderTownID = inTownQuery.recordsets[1][0].townID;
         if (newLeaderTownID !== oldLeaderTownID) {
             await transaction.rollback();
-            ws.send(JSON.stringify({
-                status: 400,
-                body: {
-                    message: `${newLeader} is not in the same town as you`
-                }
-            }));
-            return;
+            return {
+                message: `${newLeader} is not in the same town as you`
+            };
         }
 
         // Set new leader (SQL -Profiles +Towns)
@@ -62,34 +54,20 @@ module.exports = async function (ws, actionData) {
         `)
         if (newLeaderQuery.recordset[0].leader !== UserID) {
             await transaction.rollback();
-            ws.send(JSON.stringify({
-                status: 400,
-                body: {
-                    message: "You do not own a town to transfer leadership of"
-                }
-            }));
-            return;
+            return {
+                message: "You do not own a town to transfer leadership of"
+            };
         }
-
-        ws.send(JSON.stringify({
-            status: 200,
-            body: {
-                message: "SUCCESS"
-            }
-        }));
         await transaction.commit();
+        return {
+            message: "SUCCESS"
+        }
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback()
-        ws.send(JSON.stringify({
-            status: 500,
-            body: {
-                message: "UNCAUGHT ERROR"
-            }
-        }));
-        return;
-    } finally {
-
+        return {
+            message: "UNCAUGHT ERROR"
+        };
     }
 
 }

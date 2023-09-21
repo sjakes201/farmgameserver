@@ -38,9 +38,23 @@ const buyUpgrade = require('./actions/buyUpgrade/index')
 const forgotPassEmail = require('./actions/forgotPassEmail/index')
 const userLogin = require('./actions/userLogin/index')
 const userRegister = require('./actions/userRegister/index')
+const getTownInfo = require('./actions/getTownInfo/index')
+const kickTownMember = require('./actions/kickTownMember/index')
+const createTown = require('./actions/createTown/index')
+const joinTown = require('./actions/joinTown/index')
+const leaveTown = require('./actions/leaveTown/index')
+const promoteTownMember = require('./actions/promoteTownMember/index')
+const setTownDetails = require('./actions/setTownDetails/index')
+const setTownGoal = require('./actions/setTownGoal/index')
+const claimTownGoal = require('./actions/claimTownGoal/index')
+const getRandomTowns = require('./actions/getRandomTowns/index')
+const getTownPerks = require('./actions/getTownPerks/index')
+const getTopTowns = require('./actions/getTopTowns/index')
+
+// TEMP TESTING
 
 // Other imports
-const scheduleTasks = require('./cronJobs');  
+const scheduleTasks = require('./cronJobs');
 const url = require('url');
 const jwt = require('jsonwebtoken');
 
@@ -65,6 +79,7 @@ function decodeUserID(token) {
     };
   }
 }
+
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -253,6 +268,55 @@ wss.on('connection', async (ws, req) => {
             let urData = await userRegister(ws, params)
             ws.send(JSON.stringify({ action: 'userRegister', body: urData }));
             break;
+          case 'getTownInfo':
+            let tiData = await getTownInfo(ws, params)
+            ws.send(JSON.stringify({ action: 'getTownInfo', body: tiData }));
+            break;
+          case 'kickTownMember':
+            let ktmData = await kickTownMember(ws, params)
+            ws.send(JSON.stringify({ action: 'kickTownMember', body: ktmData }));
+            break;
+          case 'joinTown':
+            let joinTownData = await joinTown(ws, params)
+            ws.send(JSON.stringify({ action: 'joinTown', body: joinTownData }));
+            break;
+          case 'leaveTown':
+            let ltData = await leaveTown(ws, params)
+            ws.send(JSON.stringify({ action: 'leaveTown', body: ltData }));
+            break;
+          case 'promoteTownMember':
+            let ptmData = await promoteTownMember(ws, params)
+            ws.send(JSON.stringify({ action: 'promoteTownMember', body: ptmData }));
+            break;
+          case 'setTownDetails':
+            let stdData = await setTownDetails(ws, params)
+            ws.send(JSON.stringify({ action: 'setTownDetails', body: stdData }));
+            break;
+          case 'setTownGoal':
+            let stgData = await setTownGoal(ws, params)
+            ws.send(JSON.stringify({ action: 'setTownGoal', body: stgData }));
+            break;
+          case 'createTown':
+            let crtData = await createTown(ws, params)
+            ws.send(JSON.stringify({ action: 'createTown', body: crtData }));
+            break;
+          case 'claimTownGoal':
+            let ctgData = await claimTownGoal(ws, params)
+            ws.send(JSON.stringify({ action: 'claimTownGoal', body: ctgData }));
+            break;
+          case 'getRandomTowns':
+            let grtData = await getRandomTowns(ws, params)
+            ws.send(JSON.stringify({ action: 'getRandomTowns', body: grtData }));
+            break;
+          case 'getTownPerks':
+            let gtpData = await getTownPerks(ws, params)
+            ws.send(JSON.stringify({ action: 'getTownPerks', body: gtpData }));
+            break;
+          case 'getTopTowns':
+            let gttData = await getTopTowns(ws, params)
+            ws.send(JSON.stringify({ action: 'getTopTowns', body: gttData }));
+            break;
+
         }
       } catch (error) {
         console.log(error)

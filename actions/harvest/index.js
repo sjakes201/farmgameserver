@@ -3,12 +3,17 @@ const UPGRADES = require('../shared/UPGRADES');
 const MACHINESINFO = require('../shared/MACHINESINFO')
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
+const townGoalContribute = require(`../shared/townGoalContribute`);
+const TOWNINFO = require('../shared/TOWNINFO');
 
 
 module.exports = async function (ws, actionData) {
     // GET USERID
     const UserID = ws.UserID;
 
+    // Used later in townGoalContribute
+    let resultingGood;
+    let resultingQuantity;
 
     // GET INPUTS    
     const tileID = actionData.tileID;
@@ -27,8 +32,21 @@ module.exports = async function (ws, actionData) {
 
         connection = await poolPromise;
 
-        // Get upgrades before transaction
-        let upgrades = await connection.query(`SELECT * FROM Upgrades WHERE UserID = ${UserID}`);
+        // Get user info before transaction
+        let userQuery = await connection.query(`
+        SELECT 
+            P.townID, 
+            T.growthPerkLevel, T.partsPerkLevel
+        FROM 
+            Profiles P
+        INNER JOIN 
+            Towns T ON P.townID = T.townID
+        WHERE 
+            P.UserID = ${UserID};
+        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+        `);
+        let upgrades = userQuery.recordsets[1][0]
+        let townPerks = userQuery.recordsets[0][0]
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
@@ -51,8 +69,8 @@ module.exports = async function (ws, actionData) {
 
 
         // Calclate time needed
-        let growthTableName = "GrowthTimes".concat(upgrades.recordset[0].plantGrowthTimeUpgrade);
-        let quantityTableName = "PlantQuantityYields".concat(upgrades.recordset[0].plantHarvestQuantityUpgrade);
+        let growthTableName = "GrowthTimes".concat(upgrades.plantGrowthTimeUpgrade);
+        let quantityTableName = "PlantQuantityYields".concat(upgrades.plantHarvestQuantityUpgrade);
 
         let sqlTime = tilecontents.recordset[0].PlantTime;
         let curTime = Date.now();
@@ -63,6 +81,12 @@ module.exports = async function (ws, actionData) {
 
         let cropID = tilecontents.recordset[0].CropID;
         let secsNeeded = (UPGRADES[growthTableName][CONSTANTS.ProduceNameFromID[cropID]]).reduce((prev, sum) => sum + prev);
+        // Reduce secsNeeded based on town's growthPerkLevel
+        if (townPerks?.growthPerkLevel) {
+            let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+            let boostChange = 1 - boostPercent;
+            secsNeeded *= boostChange;
+        }
 
         // If a crop ends it's time fertilized period, instead of going backwards in progress, it will have one remaining harvest be bonus time, then set time fertilizer to -1
         let activeFertilizer = false;
@@ -82,6 +106,7 @@ module.exports = async function (ws, actionData) {
             // decrease RemainingHarvests, if 0, clear tile, else, set to beginning of last growth stage (only has to do last growth time again)
 
             let crop_name = CONSTANTS.SeedCropMap[CONSTANTS.ProduceNameFromID[cropID]][0];
+            resultingGood = crop_name;
             let crop_qty = UPGRADES[quantityTableName][CONSTANTS.ProduceNameFromID[cropID]]
             // if we have a yields fertilizer, increment crop_qty then also decrement in croptiles update
             let activeYieldsFert = false;
@@ -90,9 +115,11 @@ module.exports = async function (ws, actionData) {
             if (activeYieldsFert) {
                 let bonus = CONSTANTS.yieldFertilizerBonuses[CONSTANTS.ProduceNameFromID[cropID]]
                 request.input('crop_qty', sql.Int, crop_qty + bonus);
+                resultingQuantity = crop_qty + bonus;
 
             } else {
                 request.input('crop_qty', sql.Int, crop_qty);
+                resultingQuantity = crop_qty;
 
             }
             request.input('xp', sql.Int, CONSTANTS.XP[crop_name]);
@@ -131,6 +158,11 @@ module.exports = async function (ws, actionData) {
                 if (activeFertilizer) {
                     // active time fertilizer that has not expired
                     timeSkip /= 2;
+                }
+                if (townPerks?.growthPerkLevel) {
+                    let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+                    let boostChange = 1 - boostPercent;
+                    timeSkip *= boostChange;
                 }
                 let adjustedPlantTime = Date.now() - timeSkip - 200;
                 request.input('adjustedPlantTime', sql.Decimal, adjustedPlantTime);
@@ -189,6 +221,11 @@ module.exports = async function (ws, actionData) {
                 // missing in config
                 chance = 0.01;
             }
+            if (townPerks?.partsPerkLevel) {
+                let boostPercent = TOWNINFO.upgradeBoosts.partsPerkLevel[townPerks.partsPerkLevel];
+                let boostChange = 1 + boostPercent;
+                chance *= boostChange;
+            }
             if (randChance <= chance) {
                 // get a random machine part
                 let whichPartChance = Math.random();
@@ -240,6 +277,11 @@ module.exports = async function (ws, actionData) {
             }
 
             await transaction.commit();
+            try {
+                townGoalContribute(UserID, resultingGood, resultingQuantity);
+            } catch (error) {
+                console.log(error)
+            }
             return {
                 message: "SUCCESS",
                 ...updatedTile,

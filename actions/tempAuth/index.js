@@ -83,6 +83,7 @@ module.exports = async function (ws, actionData) {
             ${tileSQL}
             INSERT INTO Machines (UserID) VALUES (@UserID);
             INSERT INTO Profiles (UserID, Balance) VALUES (@UserID, 500);
+            INSERT INTO TownContributions (UserID) VALUES (@UserID)
             INSERT INTO Upgrades (UserID) VALUES (@UserID);
             INSERT INTO Inventory_ARTISAN (UserID) VALUES (@UserID)
             INSERT INTO Inventory_PARTS (UserID) VALUES (@UserID)

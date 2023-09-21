@@ -1,11 +1,9 @@
 const sql = require('mssql');
-const { poolPromise } = require('../db'); 
+const { poolPromise } = require('../../db'); 
 
 module.exports = async function (ws, actionData) {
 
-    // const UserID = ws.UserID;
-    const UserID = actionData.UserID;
-
+    const UserID = ws.UserID;
 
     let kickedMember = actionData.kickedMember;
 
@@ -27,24 +25,16 @@ module.exports = async function (ws, actionData) {
         `)
         if (kickedUserIDQuery.recordset.length === 0) {
             await transaction.rollback();
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: 'Attempted to kick user that does not exist'
-                }
-            }));
-            return;
+            return  {
+                message: 'Attempted to kick user that does not exist'
+            };
         }
         let kickedUserID = kickedUserIDQuery.recordset[0].UserID;
         if(kickedUserID === UserID) {
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: "You cannot kick yourself out of a town, must use leave function"
-                }
-            }));
             await transaction.rollback();
-            return;
+            return {
+                message: "You cannot kick yourself out of a town, must use leave function"
+            };
         }
         request.input(`kickedUserID`, sql.Int, kickedUserID)
 
@@ -58,49 +48,41 @@ module.exports = async function (ws, actionData) {
         let leaderTownID = inTownQuery.recordsets[1][0].townID;
         if (kickedUserTownID !== leaderTownID || kickedUserTownID === -1) {
             await transaction.rollback();
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: `${kickedMember} is not in the same town as you or is not in a town`
-                }
-            }));
-            return;
+            return  {
+                message: `${kickedMember} is not in the same town as you or is not in a town`
+            };
         }
 
-        // Check that you are the leader of the town and decrement member count (SQL -Profiles +Towns)
+        // Check that you are the leader of the town, decrement member count, and reset the kicked user's town contributions (SQL -Profiles +-Towns +TownContributions)
         let updateTownQuery = await request.query(`
             UPDATE Towns SET memberCount = memberCount - 1 WHERE townID = ${leaderTownID}
             SELECT leader FROM Towns WHERE townID = ${leaderTownID}
+            
+            UPDATE TownContributions SET 
+            townID = -1,
+            progress_1 = 0, progress_2 = 0, progress_3 = 0, progress_4 = 0, progress_5 = 0, progress_6 = 0, progress_7 = 0, progress_8 = 0,
+            unclaimed_1 = NULL, unclaimed_2 = NULL, unclaimed_3 = NULL, unclaimed_4 = NULL, unclaimed_5 = NULL, unclaimed_6 = NULL, unclaimed_7 = NULL, unclaimed_8 = NULL 
+            WHERE UserID = @kickedUserID
         `)
         if (updateTownQuery.recordset[0].leader !== UserID) {
             await transaction.rollback();
-            ws.send(JSON.stringify( {
-                status: 400,
-                body: {
-                    message: "You are not the leader of this town"
-                }
-            }));
-            return;
+            return  {
+                message: "You are not the leader of this town"
+            };
+        }
+        await transaction.commit();
+        return {
+            message: "SUCCESS"
         }
 
 
-        await transaction.commit();
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback()
-        ws.send(JSON.stringify( {
-            status: 500,
-            body: {
-                message: "UNCAUGHT ERROR"
-            }
-        }));
-        return;
+        return  {
+            message: "UNCAUGHT ERROR"
+        };
     }
-
-    ws.send(JSON.stringify( {
-        // status: 200, /* Defaults to 200 */
-        body: {}
-    }));
 }
 
 
