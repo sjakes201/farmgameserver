@@ -298,6 +298,7 @@ wss.on('connection', async (ws, req) => {
             break;
           case 'createTown':
             let crtData = await createTown(ws, params)
+            console.log('created town')
             ws.send(JSON.stringify({ action: 'createTown', body: crtData }));
             break;
           case 'claimTownGoal':

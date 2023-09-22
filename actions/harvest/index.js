@@ -226,6 +226,7 @@ module.exports = async function (ws, actionData) {
                 let boostChange = 1 + boostPercent;
                 chance *= boostChange;
             }
+            console.log(chance)
             if (randChance <= chance) {
                 // get a random machine part
                 let whichPartChance = Math.random();
