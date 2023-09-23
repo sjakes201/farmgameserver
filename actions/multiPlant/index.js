@@ -17,9 +17,9 @@ module.exports = async function (ws, actionData) {
         };
     }
 
-    if (tiles.length === 0 || tiles.length > 9) {
+    if (tiles.length <= 0) {
         return {
-            message: "Invalid tiles count ([1,9] required)"
+            message: "Invalid tiles count"
         };
     }
 

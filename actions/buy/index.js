@@ -55,8 +55,17 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
-
-        let xpQuery = await connection.query(`SELECT XP from Profiles WHERE UserID = ${UserID}`)
+        console.log(count)
+        let xpQuery;
+        if(count > 25) {
+            // Abnormal purchase quantity, potentially scripting
+            xpQuery = await connection.query(`
+            UPDATE Profiles SET irregularBuy = irregularBuy + 1 WHERE UserID = ${UserID}
+            SELECT XP from Profiles WHERE UserID = ${UserID}
+            `)
+        } else {
+            xpQuery = await connection.query(`SELECT XP from Profiles WHERE UserID = ${UserID}`)
+        }
         let upgradesQuery = await connection.query(`SELECT deluxePermit, plantNumHarvestsUpgrade FROM Upgrades WHERE UserID = ${UserID}`);
 
         let xp = xpQuery.recordset[0].XP;

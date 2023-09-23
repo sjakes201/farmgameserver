@@ -50,9 +50,10 @@ const claimTownGoal = require('./actions/claimTownGoal/index')
 const getRandomTowns = require('./actions/getRandomTowns/index')
 const getTownPerks = require('./actions/getTownPerks/index')
 const getTopTowns = require('./actions/getTopTowns/index')
+const linkDiscordAcc = require('./actions/linkDiscordAcc/index')
 
 // TEMP TESTING
-
+// linkDiscordAcc();
 // Other imports
 const scheduleTasks = require('./cronJobs');
 const url = require('url');

@@ -15,9 +15,9 @@ module.exports = async function (ws, actionData) {
     // Multitile input: receive an array of objects, one object per tile, each tile has tileID: which is the tile id [{tileID: 2}, {tileID: 4}, {tileID: 5}]
     const tiles = actionData.tiles;
     // const tiles = [{ tileID: 1 }, { tileID: 2 }, { tileID: 3 }, { tileID: 11 }, { tileID: 21 }, { tileID: 31 }, { tileID: 41 }, { tileID: 51 }]
-    if (tiles.length === 0 || tiles.length > 9) {
+    if (tiles.length <= 0) {
         return {
-            message: "Invalid multiHarvest tiles count ([1,9] required)"
+            message: "Invalid multiHarvest tiles count"
         };
     }
     /*
@@ -41,14 +41,9 @@ module.exports = async function (ws, actionData) {
             P.UserID = ${UserID};
         SELECT * FROM Upgrades WHERE UserID = ${UserID}
         `);
+
         let upgrades = userQuery.recordsets[1][0]
         let townPerks = userQuery.recordsets[0][0]
-        let userXP = userQuery.recordsets[0][0].XP;
-
-
-        if (userXP < 0) {
-            // TODO: set xp for level you unlock this feature, IF using only for multiharvest scythe
-        }
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
@@ -369,9 +364,8 @@ module.exports = async function (ws, actionData) {
             UPDATE ORDERS SET progress_1 = progress_1 + ${newProgress.progress_1}, progress_2 = progress_2 + ${newProgress.progress_2}, progress_3 = progress_3 + ${newProgress.progress_3}, progress_4 = progress_4 + ${newProgress.progress_4} WHERE UserID = @UserID
             `)
         }
-
-
         await transaction.commit();
+
         Object.keys(cropsSum).forEach((crop) => {
             try {
                 townGoalContribute(UserID, crop, cropsSum[crop])
