@@ -37,7 +37,6 @@ module.exports = async function () {
                     allPlayersQuery = await request.query(`SELECT UserID, Balance FROM Profiles`);
                 } else if (category === 'XP') {
                     allPlayersQuery = await request.query(`SELECT UserID, XP FROM Profiles`);
-
                 } else {
                     allPlayersQuery = await request.query(`SELECT UserID, ${category} FROM LeaderboardSum`);
                 }

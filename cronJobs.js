@@ -45,11 +45,15 @@ const scheduleTasks = () => {
 
     // Refresh leaderboards every 10 minutes
     cron.schedule('*/10 * * * *', async () => {
-        try {
-            await refreshLeaderboardTIMER();
-            console.log('Successfully ran refreshLeaderboardTIMER');
-        } catch (error) {
-            console.log('Error running refreshLeaderboardTIMER:', error);
+        if(process.env.RUN_LEADERBOARD_REFRESH === "true") {
+            try {
+                await refreshLeaderboardTIMER();
+                console.log('Successfully ran refreshLeaderboardTIMER');
+            } catch (error) {
+                console.log('Error running refreshLeaderboardTIMER:', error);
+            }
+        } else {
+            console.log("Not running leaderboard refresh")
         }
     });
 };
