@@ -62,7 +62,15 @@ const jwt = require('jsonwebtoken');
 
 scheduleTasks();
 
+let connectedUsers = [];
 
+try {
+  let intervalID = setInterval(() => {
+    console.log(`${connectedUsers.length} currently connected users: [${connectedUsers.join(', ')}]`)
+  }, 25000)
+} catch (error) {
+  console.log(error)
+}
 
 function decodeUserID(token) {
   try {
@@ -121,6 +129,7 @@ wss.on('connection', async (ws, req) => {
     }
 
     console.log(`Client UserID ${ws.UserID} connected`);
+    connectedUsers.push(ws.UserID)
 
     ws.on('message', async (message) => {
       try {
@@ -327,6 +336,7 @@ wss.on('connection', async (ws, req) => {
 
     ws.on('close', () => {
       console.log(`Client ${ws.UserID} disconnected`);
+      connectedUsers = connectedUsers.filter((id) => id !== ws.UserIDs)
     });
   } catch (error) {
     console.log(error)

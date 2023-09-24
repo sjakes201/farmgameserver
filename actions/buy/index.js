@@ -55,7 +55,6 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
-        console.log(count)
         let xpQuery;
         if(count > 25) {
             // Abnormal purchase quantity, potentially scripting

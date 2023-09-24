@@ -56,7 +56,6 @@ module.exports = async function (ws, actionData) {
                 userWhereQuery += `${userObject.UserID})`;
             }
         })
-        console.log(userWhereQuery)
 
         let myControls;
         if (targetTown.leader === UserID) {
