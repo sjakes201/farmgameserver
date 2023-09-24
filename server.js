@@ -66,7 +66,12 @@ let connectedUsers = [];
 
 try {
   let intervalID = setInterval(() => {
-    console.log(`${connectedUsers.length} currently connected users: [${connectedUsers.join(', ')}]`)
+    let connInfoString = '';
+    connectedUsers.forEach((arr) => {
+      let minutesPassed = Math.round((Date.now() - arr[1]) / 1000 / 60);
+      connInfoString += `${arr[0]} (${minutesPassed} minutes), `
+    })
+    console.log(`${connectedUsers.length} currently connected users: ${connInfoString}`)
   }, 25000)
 } catch (error) {
   console.log(error)
@@ -129,7 +134,7 @@ wss.on('connection', async (ws, req) => {
     }
 
     console.log(`Client UserID ${ws.UserID} connected`);
-    connectedUsers.push(ws.UserID)
+    connectedUsers.push([ws.UserID, Date.now()])
 
     ws.on('message', async (message) => {
       try {
@@ -336,7 +341,7 @@ wss.on('connection', async (ws, req) => {
 
     ws.on('close', () => {
       console.log(`Client ${ws.UserID} disconnected`);
-      connectedUsers = connectedUsers.filter((id) => id !== ws.UserIDs)
+      connectedUsers = connectedUsers.filter((arr) => arr[0] !== ws.UserID)
     });
   } catch (error) {
     console.log(error)
