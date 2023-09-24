@@ -1,6 +1,6 @@
 const CONSTANTS = require('../shared/CONSTANTS');
 const sql = require('mssql');
-const { poolPromise } = require('../../db'); 
+const { poolPromise } = require('../../db');
 
 module.exports = async function () {
     if (process.env.NODE_ENV === 'TESTING') {
@@ -23,48 +23,70 @@ module.exports = async function () {
     allCategories.Balance = null;
     allCategories.XP = null;
 
-    try {connection = await poolPromise;
+    try {
+        connection = await poolPromise;
 
         for (const category in allCategories) {
-            // repeat for every category (all goods + Balance)
             try {
                 transaction = new sql.Transaction(connection);
                 await transaction.begin();
+
                 request = new sql.Request(transaction);
-                // Initiate for this column
-                let allPlayersQuery;
+
+                let fetchQuery = '';
                 if (category === 'Balance') {
-                    allPlayersQuery = await request.query(`SELECT UserID, Balance FROM Profiles`);
+                    fetchQuery = `SELECT UserID, Balance AS Value FROM Profiles`;
                 } else if (category === 'XP') {
-                    allPlayersQuery = await request.query(`SELECT UserID, XP FROM Profiles`);
+                    fetchQuery = `SELECT UserID, XP AS Value FROM Profiles`;
                 } else {
-                    allPlayersQuery = await request.query(`SELECT UserID, ${category} FROM LeaderboardSum`);
+                    fetchQuery = `SELECT UserID, ${category} AS Value FROM LeaderboardSum`;
                 }
 
-                let allPlayers = allPlayersQuery.recordset;
-                // Sort this column
-                allPlayers.sort((a, b) => b[category] - a[category]);
+                // Create temporary table
+                await request.query(`
+                    CREATE TABLE ##TempData_${category} (
+                        UserID INT,
+                        Value INT,
+                        Rank INT
+                    );
+        
+                    INSERT INTO ##TempData_${category} (UserID, Value)
+                    ${fetchQuery};
+                `);
 
 
-                // Build query to assign indices (leaderboard position) to column for user, 1000 users at a time
-                let settingQuery = ``;
-                for (let i = 0; i < allPlayers.length; ++i) {
-                    settingQuery += `
-                    UPDATE Leaderboard SET ${category} = ${i + 1} WHERE UserID = ${allPlayers[i].UserID};
-                    `
-                }
-                await request.query(settingQuery);
+                // Update rank in temporary table
+                await request.query(`
+                    WITH Ranked AS (
+                        SELECT UserID, Value, ROW_NUMBER() OVER (ORDER BY Value DESC) AS Rank
+                        FROM ##TempData_${category}
+                    )
+                    UPDATE t
+                    SET t.Rank = r.Rank
+                    FROM ##TempData_${category} t
+                    JOIN Ranked r ON t.UserID = r.UserID;
+                `);
+
+
+                // Update the main leaderboard using a join with the temporary table
+                await request.query(`
+                    UPDATE l
+                    SET l.${category} = t.Rank
+                    FROM Leaderboard l
+                    JOIN ##TempData_${category} t ON l.UserID = t.UserID;
+                `);
+                await request.query(`DROP TABLE ##TempData_${category};`);
 
                 await transaction.commit();
-                transaction = null;
-                request = null;
-
-                console.log(`SORTED ${category}`)
+                console.log(`SORTED ${category}`);
             } catch (error) {
-                if (transaction) transaction.rollback();
-                console.log(error);
+                console.error(`Error processing category ${category}:`, error);
+                if (transaction) {
+                    await transaction.rollback();
+                }
             }
         }
+
 
 
 
@@ -73,49 +95,65 @@ module.exports = async function () {
         // remove Balance as temp leaderboard category
         delete allCategories.Balance;
         delete allCategories.XP;
+
         for (const category in allCategories) {
-
-            // repeat for every category (all goods + Balance)
             try {
-
                 transaction = new sql.Transaction(connection);
                 await transaction.begin();
+
                 request = new sql.Request(transaction);
-                // Initiate for this column
-                let allPlayersQuery = await request.query(`SELECT UserID, ${category} FROM TempLeaderboardSum`);
-                let allPlayers = allPlayersQuery.recordset;
-                // Sort this column
-                allPlayers.sort((a, b) => b[category] - a[category]);
-                // Build query to assign indices (leaderboard position) to column for user
-                let settingQuery = ``;
-                for (let i = 0; i < allPlayers.length; ++i) {
-                    settingQuery += `
-                    UPDATE TempLeaderboard SET ${category} = ${i + 1} WHERE UserID = ${allPlayers[i].UserID};
-                    `
-                }
-                await request.query(settingQuery);
-                await request.query(settingQuery);
+
+                let fetchQuery = `SELECT UserID, ${category} AS Value FROM TempLeaderboardSum`;
+                
+
+                // Create temporary table
+                await request.query(`
+                    CREATE TABLE ##TempData_Temp_${category} (
+                        UserID INT,
+                        Value INT,
+                        Rank INT
+                    );
+        
+                    INSERT INTO ##TempData_Temp_${category} (UserID, Value)
+                    ${fetchQuery};
+                `);
+
+
+                // Update rank in temporary table
+                await request.query(`
+                    WITH Ranked AS (
+                        SELECT UserID, Value, ROW_NUMBER() OVER (ORDER BY Value DESC) AS Rank
+                        FROM ##TempData_Temp_${category}
+                    )
+                    UPDATE t
+                    SET t.Rank = r.Rank
+                    FROM ##TempData_Temp_${category} t
+                    JOIN Ranked r ON t.UserID = r.UserID;
+                `);
+
+
+                // Update the main leaderboard using a join with the temporary table
+                await request.query(`
+                    UPDATE l
+                    SET l.${category} = t.Rank
+                    FROM TempLeaderboard l
+                    JOIN ##TempData_Temp_${category} t ON l.UserID = t.UserID;
+                `);
+                await request.query(`DROP TABLE ##TempData_Temp_${category};`);
+
                 await transaction.commit();
-                transaction = null;
-                request = null;
-
-                console.log(`SORTED ${category}`)
+                console.log(`SORTED ${category}`);
             } catch (error) {
-                if (transaction) transaction.rollback();
                 console.error(`Error processing category ${category}:`, error);
-
-                // console.log(error);
+                if (transaction) {
+                    await transaction.rollback();
+                }
             }
         }
 
-
     } catch (error) {
-        if (transaction) await transaction.rollback()
         console.log("DATABASE CONNECTION FAILURE");
     }
-
-    // UPDATE ALLTIME LEADERBOARD
-
 
 };
 
