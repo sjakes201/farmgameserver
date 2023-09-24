@@ -142,7 +142,6 @@ module.exports = async function () {
                 await request.query(`DROP TABLE ##TempData_Temp_${category};`);
 
                 await transaction.commit();
-                console.log(`SORTED ${category}`);
             } catch (error) {
                 console.error(`Error processing category ${category}:`, error);
                 if (transaction) {

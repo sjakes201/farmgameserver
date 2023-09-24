@@ -69,10 +69,16 @@ try {
     let connInfoString = '';
     connectedUsers.forEach((arr) => {
       let minutesPassed = Math.round((Date.now() - arr[1]) / 1000 / 60);
-      connInfoString += `${arr[0]} (${minutesPassed} minutes), `
+      connInfoString += `${arr[0]} (${minutesPassed} min), `
     })
-    console.log(`${connectedUsers.length} currently connected users: ${connInfoString}`)
-  }, 25000)
+    console.log(`
+[***** LIVE STATS *****]\n
+Currently connected users: ${connectedUsers.length}\n
+(UserID, session duration): \n
+${connInfoString}\n
+[*****            *****]
+    `)
+  }, 30000)
 } catch (error) {
   console.log(error)
 }
@@ -134,7 +140,9 @@ wss.on('connection', async (ws, req) => {
     }
 
     console.log(`Client UserID ${ws.UserID} connected`);
-    connectedUsers.push([ws.UserID, Date.now()])
+    if(!connectedUsers.some((arr) => arr[0] === ws.UserID)) {
+      connectedUsers.push([ws.UserID, Date.now()])
+    }
 
     ws.on('message', async (message) => {
       try {
