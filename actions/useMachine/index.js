@@ -97,7 +97,6 @@ module.exports = async function (ws, actionData) {
                 message: `No machine built at slot ${slot}`
             };
         }
-        console.log(`machineType ${machineType} tier: ${curMachine.recordset[0][`Slot${slot}Level`]}`)
         let correctMachineID = MACHINESINFO.machineTypeIDS[machineType], realMachineID = curMachine.recordset[0][`Slot${slot}`]
         let correctCapacity = MACHINESINFO[`${machineType}MachineInfo`][`tier${curMachine.recordset[0][`Slot${slot}Level`]}`].capacity;
         if (sum > correctCapacity) {

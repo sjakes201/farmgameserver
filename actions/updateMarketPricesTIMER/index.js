@@ -28,7 +28,6 @@ module.exports = async function () {
 
         let new_prices = {};
         for (const good in cur_vol) {
-            console.log(good)
             let old_volume = old_vol[good];
 
             let new_volume = cur_vol[good];
@@ -64,8 +63,6 @@ module.exports = async function () {
             }
             new_price = Math.round((new_price) * 100) / 100
             new_prices[good] = new_price;
-            console.log(`${good} old vol: ${cur_price} new vol: ${new_volume}`)
-            console.log(`${good} old price : ${cur_price[good]} new price: ${new_prices[good]} which is ${Math.round(new_prices[good] / cur_price[good] * 100)}% chance`)
         }
 
 
@@ -100,8 +97,6 @@ module.exports = async function () {
         let clear_market_vol_query = `UPDATE MARKET_VOLUME SET carrot = 0, melon = 0, cauliflower = 0, pumpkin = 0, yam = 0, beet = 0, parsnip = 0, bamboo = 0, hops = 0, corn = 0, potato = 0, blueberry = 0, grape = 0, oats = 0, strawberry = 0, chicken_egg = 0, cow_milk = 0, duck_egg = 0, quail_egg = 0, yak_milk = 0, sheep_wool = 0, goat_milk = 0, ostrich_egg = 0, llama_wool = 0, kiwi_egg = 0`;
 
         // Update prices (SQL +Market)
-        console.log(update_price_query)
-        console.log(update_old_price_query)
         await request.query(update_price_query);
         await request.query(update_old_price_query);
         await request.query(update_old_vol_query);

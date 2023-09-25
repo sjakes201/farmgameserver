@@ -5,7 +5,7 @@ const connectionString = process.env.DB_CONNECT_STRING; // Your connection strin
 // Additional Configuration
 const additionalConfig = {
   pool: {
-    max: 20,  // maximum number of connections in pool
+    max: 50,  // maximum number of connections in pool
     min: 0,  // minimum number of connections in pool
     idleTimeoutMillis: 30000 // time (in milliseconds) to wait before closing idle connections
   },

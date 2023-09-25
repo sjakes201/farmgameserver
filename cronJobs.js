@@ -43,12 +43,15 @@ const scheduleTasks = () => {
         }
     });
 
-    // Refresh leaderboards every 10 minutes
-    cron.schedule('*/10 * * * *', async () => {
+    let leaderboardCycle = 1;
+    // Cycle every 3 minutes, total refresh every 12
+    cron.schedule('*/1 * * * *', async () => {
         if(process.env.RUN_LEADERBOARD_REFRESH === "true") {
             try {
-                await refreshLeaderboardTIMER();
-                console.log('Successfully ran refreshLeaderboardTIMER');
+                leaderboardCycle = (leaderboardCycle % 4) + 1;
+
+                await refreshLeaderboardTIMER(leaderboardCycle);
+                console.log(`Successfully ran refreshLeaderboardTIMER cycle ${leaderboardCycle}`);
             } catch (error) {
                 console.log('Error running refreshLeaderboardTIMER:', error);
             }

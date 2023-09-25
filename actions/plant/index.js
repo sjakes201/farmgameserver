@@ -16,7 +16,7 @@ module.exports = async function (ws, actionData) {
 
     // verify seed is valid sql column
     if (!(seed in UPGRADES.GrowthTimes0)) {
-        console.log("INVALID SEED");
+        console.log(`INVALID SEED ${seed}`);
         return {
             message: "INVALID SEED"
         };

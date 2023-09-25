@@ -2,7 +2,7 @@ const CONSTANTS = require('../shared/CONSTANTS');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 
-module.exports = async function () {
+module.exports = async function (leaderboardCycle) {
     if (process.env.NODE_ENV === 'TESTING') {
         console.log("TESTING ENV, NOT RUNNING")
         return;
@@ -23,11 +23,21 @@ module.exports = async function () {
     allCategories.Balance = null;
     allCategories.XP = null;
 
+    const leaderboardCycles = {
+        cycle1: ["carrot", "melon", "cauliflower", "pumpkin", "yam", "Balance", "XP"],
+        cycle2: ["bamboo", "hops", "corn", "potato", "blueberry", "grape", "parsip"],
+        cycle3: ["oats", "strawberry", "cow_milk", "chicken_egg", "duck_egg", "quail_egg", "beet"],
+        cycle4: ["yak_milk", "sheep_wool", "goat_milk", "ostrich_egg", "llama_wool", "kiwi_egg"]
+    }
+
     try {
         connection = await poolPromise;
 
         for (const category in allCategories) {
             try {
+                if (!leaderboardCycles[`cycle${leaderboardCycle}`].includes(category)) {
+                    continue;
+                }
                 transaction = new sql.Transaction(connection);
                 await transaction.begin();
 
@@ -76,9 +86,8 @@ module.exports = async function () {
                     JOIN ##TempData_${category} t ON l.UserID = t.UserID;
                 `);
                 await request.query(`DROP TABLE ##TempData_${category};`);
-
                 await transaction.commit();
-                console.log(`SORTED ${category}`);
+                console.log(`sorted leaderboard ${category}`);
             } catch (error) {
                 console.error(`Error processing category ${category}:`, error);
                 if (transaction) {
@@ -87,10 +96,6 @@ module.exports = async function () {
             }
         }
 
-
-
-
-
         // UPDATE TEMP LEADERBOARD
         // remove Balance as temp leaderboard category
         delete allCategories.Balance;
@@ -98,13 +103,16 @@ module.exports = async function () {
 
         for (const category in allCategories) {
             try {
+                if (!leaderboardCycles[`cycle${leaderboardCycle}`].includes(category)) {
+                    continue;
+                }
                 transaction = new sql.Transaction(connection);
                 await transaction.begin();
 
                 request = new sql.Request(transaction);
 
                 let fetchQuery = `SELECT UserID, ${category} AS Value FROM TempLeaderboardSum`;
-                
+
 
                 // Create temporary table
                 await request.query(`
@@ -142,6 +150,7 @@ module.exports = async function () {
                 await request.query(`DROP TABLE ##TempData_Temp_${category};`);
 
                 await transaction.commit();
+                console.log(`sorted templeaderboard ${category}`)
             } catch (error) {
                 console.error(`Error processing category ${category}:`, error);
                 if (transaction) {

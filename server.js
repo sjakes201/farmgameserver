@@ -72,11 +72,13 @@ try {
       connInfoString += `${arr[0]} (${minutesPassed} min), `
     })
     console.log(`
+    \n
 [***** LIVE STATS *****]\n
 Currently connected users: ${connectedUsers.length}\n
 (UserID, session duration): \n
 ${connInfoString}\n
 [*****            *****]
+\n
     `)
   }, 30000)
 } catch (error) {
@@ -140,7 +142,7 @@ wss.on('connection', async (ws, req) => {
     }
 
     console.log(`Client UserID ${ws.UserID} connected`);
-    if(!connectedUsers.some((arr) => arr[0] === ws.UserID)) {
+    if (!connectedUsers.some((arr) => arr[0] === ws.UserID)) {
       connectedUsers.push([ws.UserID, Date.now()])
     }
 

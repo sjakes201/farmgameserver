@@ -11,7 +11,7 @@ module.exports = async function (ws, actionData) {
     let tiles = actionData.tiles, seed = actionData.seedName, cropID = CONSTANTS.ProduceIDs[seed];
 
     if (!(seed in UPGRADES.GrowthTimes0)) {
-        console.log("INVALID SEED");
+        console.log(`INVALID SEED ${seed}`);
         return {
             message: "INVALID SEED"
         };

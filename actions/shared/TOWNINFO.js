@@ -1,10 +1,3 @@
-/*
- What is the personal reward for a goal?
- Expect 15 people per town to each contribute 1 medium tier goal quantity
- Receive personally 5 times the goal
-
-*/
-
 module.exports = {
     VALUES: {
         townMemberLimit: 25,
