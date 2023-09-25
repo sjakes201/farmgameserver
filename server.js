@@ -50,7 +50,7 @@ const claimTownGoal = require('./actions/claimTownGoal/index')
 const getRandomTowns = require('./actions/getRandomTowns/index')
 const getTownPerks = require('./actions/getTownPerks/index')
 const getTopTowns = require('./actions/getTopTowns/index')
-const linkDiscordAcc = require('./actions/linkDiscordAcc/index')
+// const linkDiscordAcc = require('./actions/linkDiscordAcc/index')
 
 // TEMP TESTING
 // linkDiscordAcc();
@@ -67,16 +67,15 @@ let connectedUsers = [];
 try {
   let intervalID = setInterval(() => {
     let connInfoString = '';
-    connectedUsers.forEach((arr) => {
-      let minutesPassed = Math.round((Date.now() - arr[1]) / 1000 / 60);
-      connInfoString += `${arr[0]} (${minutesPassed} min), `
+    connectedUsers.forEach((userObj) => {
+      connInfoString += `${userObj.UserID} > connectedAt: ${userObj.connectedAt} / ${Math.round((Date.now() - userObj.connectedAt)/1000/60)} mins | lastActive: ${userObj.lastActive} / ${Math.round((Date.now() - userObj.lastActive)/1000)} secs \n`
     })
     console.log(`
     \n
 [***** LIVE STATS *****]\n
 Currently connected users: ${connectedUsers.length}\n
 (UserID, session duration): \n
-${connInfoString}\n
+${connInfoString}
 [*****            *****]
 \n
     `)
@@ -111,6 +110,23 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+setInterval(() => {
+  try {
+    const FIVE_MINS = 5 * 60 * 1000;
+    const now = Date.now();
+
+    connectedUsers.forEach(user => {
+      if (now - user.lastActive > FIVE_MINS) {
+        console.log(`Disconnecting ${user.UserID}`)
+        // Close the WebSocket connection for this user
+        user.userWs.close(1000, 'Inactivity timeout');
+      }
+    });
+  } catch (error) {
+    console.log(error)
+  }
+}, 10000)
+
 wss.on('connection', async (ws, req) => {
   try {
     const parameters = url.parse(req.url, true);
@@ -142,14 +158,20 @@ wss.on('connection', async (ws, req) => {
     }
 
     console.log(`Client UserID ${ws.UserID} connected`);
-    if (!connectedUsers.some((arr) => arr[0] === ws.UserID)) {
-      connectedUsers.push([ws.UserID, Date.now()])
+    if (connectedUsers.every((obj) => obj.UserID !== ws.UserID)) {
+      connectedUsers.push({
+        UserID: ws.UserID,
+        connectedAt: Date.now(),
+        lastActive: Date.now(),
+        userWs: ws
+      })
     }
 
     ws.on('message', async (message) => {
       try {
+        let user = connectedUsers.find(u => u.UserID === ws.UserID);
+        if (user) user.lastActive = Date.now()
 
-        // console.log(`Received message => ${message}`);
         const parsedMessage = JSON.parse(message);
 
         const action = parsedMessage.action;
@@ -351,7 +373,7 @@ wss.on('connection', async (ws, req) => {
 
     ws.on('close', () => {
       console.log(`Client ${ws.UserID} disconnected`);
-      connectedUsers = connectedUsers.filter((arr) => arr[0] !== ws.UserID)
+      connectedUsers = connectedUsers.filter((obj) => obj.UserID !== ws.UserID)
     });
   } catch (error) {
     console.log(error)

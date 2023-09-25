@@ -1,6 +1,6 @@
 const CONSTANTS = require('../shared/CONSTANTS');
 const sql = require('mssql');
-const { poolPromise } = require('../../db'); 
+const { poolPromise } = require('../../db');
 
 
 module.exports = async function (ws, actionData) {
@@ -9,7 +9,9 @@ module.exports = async function (ws, actionData) {
 
 
     if (typeof item !== "string" || !(item in CONSTANTS.Init_Market_Prices) || !Number.isInteger(count) || count < 0) {
-        console.log("INVALID /marketSell endpoint inputs")
+        try {
+            console.log(`INVALID /marketSell endpoint inputs ${item}`)
+        } catch (error) { console.log(error) }
         return {
             message: "INVALID /market_sell inputs"
         };
