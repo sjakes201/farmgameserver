@@ -1,5 +1,6 @@
 const sql = require('mssql');
 const sgMail = require('@sendgrid/mail')
+const { poolPromise } = require('../../db');
 
 function generateResetCode() {
     let resetCode = '';
@@ -61,12 +62,9 @@ module.exports = async function (ws, actionData) {
     } catch (error) {
         console.log(error);
     } finally {
-        ws.send(JSON.stringify({
-            status: 200,
-            body: {
-                message: 'Sent email if account associated with email exists'
-            }
-        }));
+        return {
+            message: 'Sent email if account associated with email exists'
+        }
     }
 
 

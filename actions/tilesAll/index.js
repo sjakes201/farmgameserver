@@ -1,4 +1,3 @@
-const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const CONSTANTS = require('../shared/CONSTANTS');
 
@@ -8,7 +7,6 @@ module.exports = async function (ws, actionData) {
 
 
     // QUERY DB 
-
     let connection;
     try {
         connection = await poolPromise;

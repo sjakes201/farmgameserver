@@ -56,7 +56,7 @@ module.exports = async function (ws, actionData) {
     try {
         connection = await poolPromise;
         let xpQuery;
-        if(count > 25) {
+        if (count > 25) {
             // Abnormal purchase quantity, potentially scripting
             xpQuery = await connection.query(`
             UPDATE Profiles SET irregularBuy = irregularBuy + 1 WHERE UserID = ${UserID}
@@ -73,7 +73,7 @@ module.exports = async function (ws, actionData) {
             if (parseInt(level) < lvl) {
                 if (CONSTANTS.levelUnlocks[lvl].includes(Item)) {
                     console.log("NEED MORE XP");
-                    return  {
+                    return {
                         message: "NEED MORE XP"
                     };
                 }
@@ -84,7 +84,7 @@ module.exports = async function (ws, actionData) {
             let permitData = upgradesQuery.recordset[0].deluxePermit;
             if (!permitData) {
                 console.log("You need to buy a deluxe crops permit.");
-                return  {
+                return {
                     message: "NEED PERMIT"
                 };
             }
@@ -108,7 +108,7 @@ module.exports = async function (ws, actionData) {
         if (userBal < 0) {
             await transaction.rollback();
             console.log("INSUFFICIENT BALANCE");
- 
+
             return {
                 message: "INSUFFICIENT BALANCE"
 
@@ -122,20 +122,20 @@ module.exports = async function (ws, actionData) {
         `)
         if (seedCount.recordset[0][Item] > SEED_LIMIT) {
             console.log("SEED CAPACITY!!")
-              await transaction.rollback();
+            await transaction.rollback();
             return {
                 message: "SEED CAPACITY"
             };
         }
 
         await transaction.commit();
-        return  {
+        return {
             message: "SUCCESS"
         };
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback();
-    } 
+    }
 }
 
 

@@ -81,8 +81,10 @@ module.exports = async function (ws, actionData) {
             await transaction.commit()
             return { message: 'SUCCESS' }
         } catch (sqlError) {
+
             if (sqlError.number === 2601 || sqlError.number === 2627) {
                 // Unique constraint violation error (error code 2601 or 2627)
+            if (transaction) await transaction.rollback()
                 return {
                     message: "Unique constraint violation. The provided townName is not unique or the leader already owns a town."
                 }

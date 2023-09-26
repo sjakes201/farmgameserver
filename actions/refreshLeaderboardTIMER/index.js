@@ -87,7 +87,6 @@ module.exports = async function (leaderboardCycle) {
                 `);
                 await request.query(`DROP TABLE ##TempData_${category};`);
                 await transaction.commit();
-                console.log(`sorted leaderboard ${category}`);
             } catch (error) {
                 console.error(`Error processing category ${category}:`, error);
                 if (transaction) {
@@ -150,7 +149,6 @@ module.exports = async function (leaderboardCycle) {
                 await request.query(`DROP TABLE ##TempData_Temp_${category};`);
 
                 await transaction.commit();
-                console.log(`sorted templeaderboard ${category}`)
             } catch (error) {
                 console.error(`Error processing category ${category}:`, error);
                 if (transaction) {

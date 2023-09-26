@@ -1,6 +1,7 @@
 const sql = require('mssql');
 const bcrypt = require('bcryptjs');
 const CONSTANTS = require('../shared/CONSTANTS');
+const { poolPromise } = require('../../db');
 
 
 const PASS_REGEX = /^[a-zA-Z0-9!@#$%^&*._?-]+$/
