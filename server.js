@@ -68,7 +68,8 @@ try {
   let intervalID = setInterval(() => {
     let connInfoString = '';
     connectedUsers.forEach((userObj) => {
-      connInfoString += `${userObj.UserID} > connectedAt: ${userObj.connectedAt} / ${Math.round((Date.now() - userObj.connectedAt)/1000/60)} mins | lastActive: ${userObj.lastActive} / ${Math.round((Date.now() - userObj.lastActive)/1000)} secs \n`
+      connInfoString += `${userObj.UserID} > connectedAt: ${userObj.connectedAt} / ${Math.round((Date.now() - userObj.connectedAt)/1000/60)} mins | lastActive: ${userObj.lastActive} / ${Math.round((Date.now() - userObj.lastActive)/1000)} secs`
+      connInfoString += '\n'
     })
     console.log(`
     \n
