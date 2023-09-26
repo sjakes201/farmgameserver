@@ -68,14 +68,13 @@ try {
   let intervalID = setInterval(() => {
     let connInfoString = '';
     connectedUsers.forEach((userObj) => {
-      connInfoString += `${userObj.UserID} > connectedAt: ${userObj.connectedAt} / ${Math.round((Date.now() - userObj.connectedAt)/1000/60)} mins | lastActive: ${userObj.lastActive} / ${Math.round((Date.now() - userObj.lastActive)/1000)} secs`
-      connInfoString += '\n'
+      connInfoString += ` (${userObj.UserID} > LC: ${Math.round((Date.now() - userObj.connectedAt)/1000/60)} mins | LA: ${Math.round((Date.now() - userObj.lastActive)/1000)} secs) `
     })
     console.log(`
     \n
 [***** LIVE STATS *****]\n
-Currently connected users: ${connectedUsers.length}\n
-(UserID, session duration): \n
+Currently connected users: ${connectedUsers.length}
+(UserID, session duration):
 ${connInfoString}
 [*****            *****]
 \n
@@ -113,7 +112,7 @@ const wss = new WebSocket.Server({ server });
 
 setInterval(() => {
   try {
-    const FIVE_MINS = .5 * 60 * 1000;
+    const FIVE_MINS = 5 * 60 * 1000;
     const now = Date.now();
 
     connectedUsers.forEach(user => {
