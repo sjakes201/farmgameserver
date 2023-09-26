@@ -25,7 +25,7 @@ module.exports = async function (leaderboardCycle) {
 
     const leaderboardCycles = {
         cycle1: ["carrot", "melon", "cauliflower", "pumpkin", "yam", "Balance", "XP"],
-        cycle2: ["bamboo", "hops", "corn", "potato", "blueberry", "grape", "parsip"],
+        cycle2: ["bamboo", "hops", "corn", "potato", "blueberry", "grape", "parsnip"],
         cycle3: ["oats", "strawberry", "cow_milk", "chicken_egg", "duck_egg", "quail_egg", "beet"],
         cycle4: ["yak_milk", "sheep_wool", "goat_milk", "ostrich_egg", "llama_wool", "kiwi_egg"]
     }

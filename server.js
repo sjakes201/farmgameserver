@@ -112,7 +112,7 @@ const wss = new WebSocket.Server({ server });
 
 setInterval(() => {
   try {
-    const FIVE_MINS = 5 * 60 * 1000;
+    const FIVE_MINS = .5 * 60 * 1000;
     const now = Date.now();
 
     connectedUsers.forEach(user => {
