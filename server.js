@@ -68,7 +68,7 @@ try {
   let intervalID = setInterval(() => {
     let connInfoString = '';
     connectedUsers.forEach((userObj) => {
-      connInfoString += ` (${userObj.UserID} > LC: ${Math.round((Date.now() - userObj.connectedAt)/1000/60)} mins | LA: ${Math.round((Date.now() - userObj.lastActive)/1000)} secs) `
+      connInfoString += ` (${userObj.UserID} > LC: ${Math.round((Date.now() - userObj.connectedAt) / 1000 / 60)} mins | LA: ${Math.round((Date.now() - userObj.lastActive) / 1000)} secs) `
     })
     console.log(`
     \n
@@ -157,14 +157,16 @@ wss.on('connection', async (ws, req) => {
       }
     }
 
-    console.log(`Client UserID ${ws.UserID} connected`);
     if (connectedUsers.every((obj) => obj.UserID !== ws.UserID)) {
+      console.log(`Client UserID ${ws.UserID} connected`);
       connectedUsers.push({
         UserID: ws.UserID,
         connectedAt: Date.now(),
         lastActive: Date.now(),
         userWs: ws
       })
+    } else {
+      console.log(`Client UserID ${ws.UserID} reconnected`);
     }
 
     ws.on('message', async (message) => {

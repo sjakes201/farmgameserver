@@ -39,16 +39,14 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID);
         request.input('date', sql.Decimal, Date.now() - 500);
 
-        let updateTilesQuery = ``
+        let updateTilesQuery = ``;
 
         let tileQuery = `SELECT * FROM CropTiles WHERE UserID = @UserID AND (`
         tiles.forEach((tile) => {
             let thisID = tile.tileID;
-            if (!Number.isInteger(thisID) || thisID < 1 || thisID > 60) {
-                throw `Invalid tileid ${thisID}`
-                return;
+            if (Number.isInteger(thisID) || thisID >= 1 || thisID <= 60) {
+                tileQuery += `TileID = ${thisID} OR `
             }
-            tileQuery += `TileID = ${thisID} OR `
         })
         tileQuery = tileQuery.substring(0, tileQuery.length - 4);
         tileQuery += `)`
@@ -84,6 +82,7 @@ module.exports = async function (ws, actionData) {
             SELECT ${seed} FROM Inventory_SEEDS WHERE UserID = @UserID
         `)
         if (seedQuery.recordset[0] < 0) {
+            await transaction.rollback();
             return {
                 message: 'Insufficient seed count in inventory'
             };
