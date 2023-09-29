@@ -3,12 +3,7 @@ const refreshLeaderboardTIMER = require('./actions/refreshLeaderboardTIMER/index
 const updateMarketPricesTIMER = require('./actions/updateMarketPricesTIMER/index')
 const clearTempLeaderboardTIMER = require('./actions/clearTempLeaderboardTIMER/index')
 
-
-
-
 const cron = require('node-cron');
-
-console.log("Started cronjob file")
 
 // Schedule tasks
 const scheduleTasks = () => {
@@ -61,4 +56,6 @@ const scheduleTasks = () => {
     });
 };
 
-module.exports = scheduleTasks;
+
+scheduleTasks();
+console.log("Started cronjob file")

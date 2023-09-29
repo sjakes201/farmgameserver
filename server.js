@@ -50,17 +50,15 @@ const claimTownGoal = require('./actions/claimTownGoal/index')
 const getRandomTowns = require('./actions/getRandomTowns/index')
 const getTownPerks = require('./actions/getTownPerks/index')
 const getTopTowns = require('./actions/getTopTowns/index')
-// const linkDiscordAcc = require('./actions/linkDiscordAcc/index')
+const linkDiscordAcc = require('./actions/linkDiscordAcc/index')
 
-// TEMP TESTING
-// linkDiscordAcc();
 // Other imports
-const scheduleTasks = require('./cronJobs');
 const url = require('url');
 const jwt = require('jsonwebtoken');
 
-
-scheduleTasks();
+// Run mainBot and scheduleTasks
+const mainBot = require('./discordBot/mainBot');
+const scheduleTasks = require('./cronJobs');
 
 let connectedUsers = [];
 
@@ -365,6 +363,10 @@ wss.on('connection', async (ws, req) => {
           case 'getTopTowns':
             let gttData = await getTopTowns(ws, params)
             ws.send(JSON.stringify({ action: 'getTopTowns', body: gttData }));
+            break;
+          case 'linkDiscordAcc':
+            let discordAccData = await linkDiscordAcc(ws, params)
+            ws.send(JSON.stringify({ action: 'linkDiscordAcc', body: discordAccData }));
             break;
 
         }
