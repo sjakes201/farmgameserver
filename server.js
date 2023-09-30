@@ -178,6 +178,7 @@ wss.on('connection', async (ws, req) => {
         const params = { ...parsedMessage }
         delete params.action;
 
+
         switch (action) {
           case 'prices':
             let pricesData = await prices(ws, params);

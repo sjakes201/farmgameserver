@@ -281,89 +281,7 @@ module.exports = async function (ws, actionData) {
         finalQuery += tempLeaderQuery;
         finalQuery += leaderQuery;
         await request.query(finalQuery)
-        //Update orders
-
-        // Update ORDERS if applicable (SQL -LeaderboardSum +ORDERS)
-        let curOrders = await request.query(`SELECT goal_1, goal_2, goal_3, goal_4, progress_1, progress_2, progress_3, progress_4 FROM ORDERS WHERE UserID = @UserID`);
-        let goal1 = curOrders.recordset[0].goal_1.split(" "), goal2 = curOrders.recordset[0].goal_2.split(" "), goal3 = curOrders.recordset[0].goal_3.split(" "), goal4 = curOrders.recordset[0].goal_4.split(" ");
-        let progress1 = curOrders.recordset[0].progress_1, progress2 = curOrders.recordset[0].progress_2, progress3 = curOrders.recordset[0].progress_3, progress4 = curOrders.recordset[0].progress_4;
-        let finishedOrder = false;
-
-        let newProgress = {
-            progress_1: 0,
-            progress_2: 0,
-            progress_3: 0,
-            progress_4: 0
-        }
-
-        let amountToAdd;
-        for (const good in cropsSum) {
-            if (good === goal1[0]) {
-                if (cropsSum[good] > 0) {
-                    amountToAdd = cropsSum[good];
-                    if (amountToAdd + progress1 >= parseInt(goal1[1])) {
-                        amountToAdd = parseInt(goal1[1]) - progress1;
-                        finishedOrder = true;
-                    }
-                    newProgress.progress_1 += amountToAdd
-                    cropsSum[good] -= amountToAdd;
-                    if (cropsSum[good] <= 0) {
-                        break;
-                    }
-                }
-            }
-            if (good === goal2[0]) {
-                if (cropsSum[good] > 0) {
-                    amountToAdd = cropsSum[good];
-                    if (amountToAdd + progress2 >= parseInt(goal2[1])) {
-                        amountToAdd = parseInt(goal2[1]) - progress2;
-                        finishedOrder = true;
-                    }
-                    newProgress.progress_2 += amountToAdd
-                    cropsSum[good] -= amountToAdd;
-                    if (cropsSum[good] <= 0) {
-                        break;
-                    }
-                }
-
-            }
-            if (good === goal3[0]) {
-                if (cropsSum[good] > 0) {
-                    amountToAdd = cropsSum[good];
-                    if (amountToAdd + progress3 >= parseInt(goal3[1])) {
-                        amountToAdd = parseInt(goal3[1]) - progress3;
-                        finishedOrder = true;
-                    }
-                    newProgress.progress_3 += amountToAdd
-                    cropsSum[good] -= amountToAdd;
-                    if (cropsSum[good] <= 0) {
-                        break;
-                    }
-                }
-
-            }
-            if (good === goal4[0]) {
-                if (cropsSum[good] > 0) {
-                    amountToAdd = cropsSum[good];
-                    if (amountToAdd + progress4 >= parseInt(goal4[1])) {
-                        amountToAdd = parseInt(goal4[1]) - progress4;
-                        finishedOrder = true;
-                    }
-                    newProgress.progress_4 += amountToAdd
-                    cropsSum[good] -= amountToAdd;
-                    if (cropsSum[good] <= 0) {
-                        break;
-                    }
-                }
-
-            }
-
-        }
-        if (newProgress.progress_1 > 0 || newProgress.progress_2 > 0 || newProgress.progress_3 > 0 || newProgress.progress_4 > 0) {
-            await request.query(`
-            UPDATE ORDERS SET progress_1 = progress_1 + ${newProgress.progress_1}, progress_2 = progress_2 + ${newProgress.progress_2}, progress_3 = progress_3 + ${newProgress.progress_3}, progress_4 = progress_4 + ${newProgress.progress_4} WHERE UserID = @UserID
-            `)
-        }
+        
         await transaction.commit();
 
         Object.keys(cropsSum).forEach((crop) => {
@@ -376,7 +294,7 @@ module.exports = async function (ws, actionData) {
         return {
             message: "SUCCESS",
             updatedTiles: updatedTiles,
-            finishedOrder: finishedOrder,
+            finishedOrder: false,
         }
 
     } catch (error) {

@@ -31,8 +31,8 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID)
 
         // Increase Balance in Profiles (SQL +Profiles)
-        request.input('revenue', sql.Decimal, revenue);
-        let balChange = await request.query(`UPDATE Profiles SET Balance = Balance + @revenue WHERE UserID = @UserID`);
+        request.input('revenue', sql.Decimal(18,2), revenue);
+        await request.query(`UPDATE Profiles SET Balance = Balance + @revenue WHERE UserID = @UserID`);
 
 
 

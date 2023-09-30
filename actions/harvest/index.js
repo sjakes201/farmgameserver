@@ -250,32 +250,6 @@ module.exports = async function (ws, actionData) {
             `)
 
 
-            // Update ORDERS if applicable (SQL -LeaderboardSum +ORDERS)
-            let curOrders = await request.query(`SELECT goal_1, goal_2, goal_3, goal_4, progress_1, progress_2, progress_3, progress_4 FROM ORDERS WHERE UserID = @UserID`);
-            let goal1 = curOrders.recordset[0].goal_1.split(" "), goal2 = curOrders.recordset[0].goal_2.split(" "), goal3 = curOrders.recordset[0].goal_3.split(" "), goal4 = curOrders.recordset[0].goal_4.split(" ");
-            let progress1 = curOrders.recordset[0].progress_1, progress2 = curOrders.recordset[0].progress_2, progress3 = curOrders.recordset[0].progress_3, progress4 = curOrders.recordset[0].progress_4;
-            let finishedOrder = false;
-
-            // Check all goals to see if they are this crop, if they are not done yet (in case we have multiple of the same good, fill first then later ones), but only give to one
-            if (goal1[0] === crop_name && progress1 < parseInt(goal1[1])) {
-                if (progress1 + crop_qty >= goal1[1]) { crop_qty = goal1[1] - progress1; finishedOrder = true; }
-                await request.query(`UPDATE ORDERS SET progress_1 = progress_1 + ${crop_qty} WHERE UserID = @UserID`);
-            } else if (goal2[0] === crop_name && progress2 < parseInt(goal2[1])) {
-                if (progress2 + crop_qty >= goal2[1]) { crop_qty = goal2[1] - progress2; finishedOrder = true; }
-                await request.query(`UPDATE ORDERS SET progress_2 = progress_2 + ${crop_qty} WHERE UserID = @UserID`);
-            } else if (goal3[0] === crop_name && progress3 < parseInt(goal3[1])) {
-                if (progress3 + crop_qty >= goal3[1]) { crop_qty = goal3[1] - progress3; finishedOrder = true; }
-                await request.query(`UPDATE ORDERS SET progress_3 = progress_3 + ${crop_qty} WHERE UserID = @UserID`);
-            } else if (goal4[0] === crop_name && progress4 < parseInt(goal4[1])) {
-                if (progress4 + crop_qty >= goal4[1]) { crop_qty = goal4[1] - progress4; finishedOrder = true; }
-                await request.query(`UPDATE ORDERS SET progress_4 = progress_4 + ${crop_qty} WHERE UserID = @UserID`);
-            }
-
-            // If any are done irrespective of current collect/harvest, send flash as reminder
-            if (progress1 >= parseInt(goal1[1]) || progress2 >= parseInt(goal2[1]) || progress3 >= parseInt(goal3[1]) || progress4 >= parseInt(goal4[1])) {
-                finishedOrder = true;
-            }
-
             await transaction.commit();
             try {
                 townGoalContribute(UserID, resultingGood, resultingQuantity);
@@ -285,7 +259,7 @@ module.exports = async function (ws, actionData) {
             return {
                 message: "SUCCESS",
                 ...updatedTile,
-                finishedOrder: finishedOrder,
+                finishedOrder: false,
                 randomPart: randomPart,
                 hasTimeFertilizer: activeFertilizer,
             }

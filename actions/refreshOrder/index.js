@@ -169,7 +169,7 @@ module.exports = async function (ws, actionData) {
                 newReward = `${type}${num}`
             }
 
-            let newOrderQuery = await request.query(`UPDATE ORDERS SET goal_${orderNum} = '${randomGood} ${newNumNeeded}', progress_${orderNum} = 0, reward_${orderNum} = '${newReward}' WHERE UserID = @UserID`);
+            let newOrderQuery = await request.query(`UPDATE ORDERS SET goal_${orderNum} = '${randomGood} ${newNumNeeded}', reward_${orderNum} = '${newReward}' WHERE UserID = @UserID`);
             if (newOrderQuery.rowsAffected[0] === 0) {
                 await transaction.rollback();
                 return {

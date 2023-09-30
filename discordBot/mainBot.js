@@ -6,30 +6,8 @@ const SERVER_ID = '1141813454244687882';
 
 const { poolPromise } = require('../db');
 
-client.once('ready', () => {
-    console.log('Bot online!')
-    assignLeaderboardRoles();
-    setInterval(() => {
-        assignLeaderboardRoles();
-    }, 3600000)
-})
 
-async function getSQLData() {
-    try {
-        const connection = await poolPromise;
-        let data = await connection.query(`
-        SELECT Leaderboard.*, DiscordData.DiscordID
-        FROM Leaderboard
-        INNER JOIN DiscordData ON Leaderboard.UserID = DiscordData.UserID;
-        `)
-        return data.recordset;
-    } catch (error) {
-        console.log(error)
-        return {}
-    }
-}
-
-const CATEGORIES = [
+const CATEGORIES_ALLTIME = [
     ['TOP 3 GOLD ALLTIME', 'Balance'],
     ['TOP 3 XP ALLTIME', 'XP'],
     ['TOP 3 CARROT ALLTIME', 'carrot'],
@@ -56,16 +34,108 @@ const CATEGORIES = [
     ['TOP 3 GOAT MILK ALLTIME', 'goat_milk'],
     ['TOP 3 OSTRICH EGG ALLTIME', 'ostrich_egg']]
 
-async function assignLeaderboardRoles() {
+const CATEGORIES_WEEKLY = [
+    ['TOP 3 CARROT WEEKLY', 'carrot'],
+    ['TOP 3 MELON WEEKLY', 'melon'],
+    ['TOP 3 CAULIFLOWER WEEKLY', 'cauliflower'],
+    ['TOP 3 PUMPKIN WEEKLY', 'pumpkin'],
+    ['TOP 3 YAM WEEKLY', 'yam'],
+    ['TOP 3 BEET WEEKLY', 'beet'],
+    ['TOP 3 PARSNIP WEEKLY', 'parsnip'],
+    ['TOP 3 BAMBOO WEEKLY', 'bamboo'],
+    ['TOP 3 HOPS WEEKLY', 'hops'],
+    ['TOP 3 CORN WEEKLY', 'corn'],
+    ['TOP 3 POTATO WEEKLY', 'potato'],
+    ['TOP 3 BLUEBERRY WEEKLY', 'blueberry'],
+    ['TOP 3 GRAPE WEEKLY', 'grape'],
+    ['TOP 3 OATS WEEKLY', 'oats'],
+    ['TOP 3 STRAWBERRY WEEKLY', 'strawberry'],
+    ['TOP 3 COW MILK WEEKLY', 'cow_milk'],
+    ['TOP 3 CHICKEN EGG WEEKLY', 'chicken_egg'],
+    ['TOP 3 DUCK EGG WEEKLY', 'duck_egg'],
+    ['TOP 3 QUAIL EGG WEEKLY', 'quail_egg'],
+    ['TOP 3 YAK MILK WEEKLY', 'yak_milk'],
+    ['TOP 3 SHEEP WOOL WEEKLY', 'sheep_wool'],
+    ['TOP 3 GOAT MILK WEEKLY', 'goat_milk'],
+    ['TOP 3 OSTRICH EGG WEEKLY', 'ostrich_egg']]
+
+
+client.once('ready', () => {
+    console.log('Bot online!')
+    assignWeeklyLeaderboardRoles();
+    // assignAllTimeLeaderboardRoles();
+    setInterval(() => {
+        assignWeeklyLeaderboardRoles();
+        assignAllTimeLeaderboardRoles();
+    }, 3600000)
+})
+
+async function getSQLData(leaderboardType) {
+    try {
+        const connection = await poolPromise;
+        let data;
+        if (leaderboardType === 'ALLTIME') {
+            data = await connection.query(`
+            SELECT Leaderboard.*, DiscordData.DiscordID
+            FROM Leaderboard
+            INNER JOIN DiscordData ON Leaderboard.UserID = DiscordData.UserID;
+            `)
+        } else if (leaderboardType === 'WEEKLY') {
+            data = await connection.query(`
+            SELECT TempLeaderboard.*, DiscordData.DiscordID
+            FROM TempLeaderboard
+            INNER JOIN DiscordData ON TempLeaderboard.UserID = DiscordData.UserID;
+            `)
+        }
+        return data.recordset;
+    } catch (error) {
+        console.log(error)
+        return {}
+    }
+}
+
+async function assignAllTimeLeaderboardRoles() {
     try {
         const guild = client.guilds.cache.get(SERVER_ID);
         if (!guild) return;
-        let data = await getSQLData();
+        let data = await getSQLData('ALLTIME');
 
         const setRoles = async (roleName, category, allMembers) => {
             await removeRoleFromAllMembers(roleName, allMembers)
             for (const user of data) {
-                if (!user[category] || user[category] > 3) return;
+                if (!user[category] || user[category] > 3) continue;
+                let member = guild.members.cache.get(user.DiscordID)
+                if (member === undefined) {
+                    member = await guild.members.fetch(user.DiscordID).catch(err => console.log("Member not found"));
+                }
+                const role = guild.roles.cache.find(r => r.name === roleName);
+                if (member && role) {
+                    console.log(`giving role ${role} to member ${member}`)
+                    member.roles.add(role).catch(console.error)
+                }
+
+            }
+        }
+
+        const allMembersData = await guild.members.fetch();
+        CATEGORIES_ALLTIME.forEach((catArr) => {
+            setRoles(catArr[0], catArr[1], allMembersData);
+        })
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+async function assignWeeklyLeaderboardRoles() {
+    try {
+        const guild = client.guilds.cache.get(SERVER_ID);
+        if (!guild) return;
+        let data = await getSQLData('WEEKLY');
+
+        const setRoles = async (roleName, category, allMembers) => {
+            await removeRoleFromAllMembers(roleName, allMembers)
+            for (const user of data) {
+                if (!user[category] || user[category] > 3) continue;
                 let member = guild.members.cache.get(user.DiscordID)
                 if (member === undefined) {
                     member = await guild.members.fetch(user.DiscordID).catch(err => console.log("Member not found"));
@@ -79,7 +149,7 @@ async function assignLeaderboardRoles() {
         }
 
         const allMembersData = await guild.members.fetch();
-        CATEGORIES.forEach((catArr) => {
+        CATEGORIES_WEEKLY.forEach((catArr) => {
             setRoles(catArr[0], catArr[1], allMembersData);
         })
     } catch (error) {
@@ -103,7 +173,6 @@ async function removeRoleFromAllMembers(roleName, allMembers) {
         if (member.roles.cache.has(role.id)) {  // Check if member has the role
             try {
                 await member.roles.remove(role);
-                console.log(`Removed role from ${member.user.tag}`);
             } catch (error) {
                 console.error(`Error removing role from ${member.user.tag}:`, error);
             }
