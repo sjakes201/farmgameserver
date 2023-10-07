@@ -45,6 +45,7 @@ module.exports = async function (ws, actionData) {
         let encrypted_pass = await bcrypt.hash(randomPass, BCRYPT_ROUNDS);
         if (encrypted_pass === null) {
             console.log("ENCRYPT FAIL");
+            await transaction.rollback();
             return {
                 message: "ENCRYPTION FAILURE, ABORTED"
             };

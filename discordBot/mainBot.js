@@ -63,10 +63,12 @@ const CATEGORIES_WEEKLY = [
 client.once('ready', () => {
     console.log('Bot online!')
     assignWeeklyLeaderboardRoles();
-    // assignAllTimeLeaderboardRoles();
+    assignFarmerRoleToLinkedUsers();
+    assignAllTimeLeaderboardRoles();
     setInterval(() => {
         assignWeeklyLeaderboardRoles();
         assignAllTimeLeaderboardRoles();
+        assignFarmerRoleToLinkedUsers();
     }, 3600000)
 })
 
@@ -91,6 +93,50 @@ async function getSQLData(leaderboardType) {
     } catch (error) {
         console.log(error)
         return {}
+    }
+}
+
+async function assignFarmerRoleToLinkedUsers() {
+    try {
+        const guild = client.guilds.cache.get(SERVER_ID);
+        if (!guild) return;
+
+        const role = guild.roles.cache.find(r => r.name === 'Farmer');
+        if (!role) {
+            console.log("Role 'Farmer' not found.");
+            return;
+        }
+
+        const linkedUsers = await getLinkedDiscordUsers();
+        for (const discordID of linkedUsers) {
+            try {
+                let member = guild.members.cache.get(discordID);
+                if (!member) {
+                    member = await guild.members.fetch(discordID).catch(err => console.log("Member not found:", err));
+                }
+                if (member && !member.roles.cache.has(role.id)) {
+                    await member.roles.add(role);
+                    console.log(`Assigned 'Farmer' role to ${member.user.tag}`);
+                }
+            } catch (error) {
+                console.error(`Error assigning role to ${discordID}:`, error);
+            }
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+async function getLinkedDiscordUsers() {
+    try {
+        const connection = await poolPromise;
+        let data = await connection.query(`
+            SELECT DiscordID FROM DiscordData;
+        `);
+        return data.recordset.map(row => row.DiscordID);
+    } catch (error) {
+        console.log(error);
+        return [];
     }
 }
 
@@ -173,6 +219,7 @@ async function removeRoleFromAllMembers(roleName, allMembers) {
         if (member.roles.cache.has(role.id)) {  // Check if member has the role
             try {
                 await member.roles.remove(role);
+                console.log(`remoing ${roleName} from ${member}`)
             } catch (error) {
                 console.error(`Error removing role from ${member.user.tag}:`, error);
             }

@@ -12,8 +12,6 @@ module.exports = async function (ws, actionData) {
     const code = actionData?.code;
     const newPass = actionData?.newPass;
 
-    console.log(email, code, newPass)
-
     let encrypted_pass = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
 
 
@@ -57,7 +55,6 @@ module.exports = async function (ws, actionData) {
             };
         }
         let correctCode = await request.query(`SELECT ResetCode FROM Logins WHERE Email = @email`);
-        console.log(correctCode)
         if (correctCode.recordset[0].ResetCode !== code) {
             console.log("WRONG CODE");
             return {

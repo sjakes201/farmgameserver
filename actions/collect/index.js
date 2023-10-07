@@ -20,7 +20,6 @@ module.exports = async function (ws, actionData) {
     // COLLECT LOGIC
     let connection;
     let transaction;
-    let transactionStarted = false;
     try {
         connection = await poolPromise;
 
@@ -44,7 +43,6 @@ module.exports = async function (ws, actionData) {
         // Begin transaction
         transaction = new sql.Transaction(connection);
         await transaction.begin();
-        transactionStarted = true;
         const request = new sql.Request(transaction);
         request.input('UserID', sql.Int, UserID);
         request.input('AnimalID', sql.Int, parseInt(AnimalID));
@@ -175,7 +173,7 @@ module.exports = async function (ws, actionData) {
 
     } catch (error) {
         console.log(error)
-        if (transaction && transactionStarted) await transaction.rollback()
+        if (transaction) await transaction.rollback()
         console.log("Connection error in animal collect call")
         return {
             message: "Connection error in /collect call"

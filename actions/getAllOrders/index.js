@@ -1,8 +1,5 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
-const CONSTANTS = require('../shared/CONSTANTS');
-const UPGRADES = require('../shared/UPGRADES');
-const ORDERS = require('../shared/ORDERS');
 
 
 module.exports = async function (ws, actionData) {

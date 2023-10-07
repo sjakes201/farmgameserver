@@ -110,6 +110,7 @@ module.exports = async function (ws, actionData) {
                 CropID: tilecontents.recordset[0].CropID,
                 PlantTime: tilecontents.recordset[0].PlantTime
             }
+            await transaction.rollback();
             return {
                 message: "TILE ALREADY PLANTED",
                 ...updatedTile

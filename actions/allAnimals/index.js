@@ -32,8 +32,6 @@ module.exports = async function (ws, actionData) {
             barnResult: barnResult.recordset,
             coopResult: coopResult.recordset
         }
-
-        return;
     } catch (error) {
         console.log(error);
         return {

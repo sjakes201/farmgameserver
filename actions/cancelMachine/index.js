@@ -13,12 +13,11 @@ module.exports = async function (ws, actionData) {
     }
 
     let connection;
-    let transaction;
     try {
         connection = await poolPromise;
         const request = new sql.Request(connection);
         request.input('UserID', sql.Int, UserID);
-        let cancelQuery = await request.query(`UPDATE Machines SET Slot${slot}ProduceReceived = 0, Slot${slot}StartTime = -1 WHERE UserID = @UserID`)
+        await request.query(`UPDATE Machines SET Slot${slot}ProduceReceived = 0, Slot${slot}StartTime = -1 WHERE UserID = @UserID`)
     
         return  {
             message: "SUCCESS"

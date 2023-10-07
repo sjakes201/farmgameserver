@@ -159,6 +159,9 @@ module.exports = async function (leaderboardCycle) {
 
     } catch (error) {
         console.log("DATABASE CONNECTION FAILURE");
+        if (transaction) {
+            await transaction.rollback();
+        }
     }
 
 };
