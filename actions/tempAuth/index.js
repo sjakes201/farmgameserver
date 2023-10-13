@@ -94,7 +94,7 @@ module.exports = async function (ws, actionData) {
             INSERT INTO TempLeaderboard (UserID) VALUES (@UserID);
             INSERT INTO Leaderboard (UserID) VALUES (@UserID)
             INSERT INTO LeaderboardSum (UserID) VALUES (@UserID)
-            INSERT INTO ORDERS (UserID, goal_1, progress_1, goal_2, progress_2, goal_3, progress_3, goal_4, progress_4, reward_1, reward_4) VALUES (@UserID, 'corn 50', 0, 'chicken_egg 10', 0, 'carrot 25', 0, 'cow_milk 5', 0, 'TimeFertilizer1', 'YieldsFertilizer2')
+            INSERT INTO ORDERS (UserID, goal_1, progress_1, goal_2, progress_2, goal_3, progress_3, goal_4, progress_4, reward_1, reward_4) VALUES (@UserID, 'corn 50', 0, 'chicken_egg 10', 0, 'carrot 25', 0, 'cow_milk 5', 0, 'TimeFertilizer3', 'YieldsFertilizer2')
             INSERT INTO Inventory_EXTRA (UserID) VALUES (@UserID)
             `);
 

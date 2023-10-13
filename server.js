@@ -51,6 +51,8 @@ const getRandomTowns = require('./actions/getRandomTowns/index')
 const getTownPerks = require('./actions/getTownPerks/index')
 const getTopTowns = require('./actions/getTopTowns/index')
 const linkDiscordAcc = require('./actions/linkDiscordAcc/index')
+const getProfileData = require('./actions/getProfileData/index')
+const pokeUser = require('./actions/pokeUser/index')
 
 // Other imports
 const url = require('url');
@@ -368,6 +370,14 @@ wss.on('connection', async (ws, req) => {
           case 'linkDiscordAcc':
             let discordAccData = await linkDiscordAcc(ws, params)
             ws.send(JSON.stringify({ action: 'linkDiscordAcc', body: discordAccData }));
+            break;
+          case 'getProfileData':
+            let profileData = await getProfileData(ws, params)
+            ws.send(JSON.stringify({ action: 'getProfileData', body: profileData }));
+            break;
+          case 'pokeUser':
+            let pokeData = await pokeUser(ws, params)
+            ws.send(JSON.stringify({ action: 'pokeUser', body: pokeData }));
             break;
 
         }

@@ -1,10 +1,25 @@
+process.on('unhandledRejection', (reason, promise) => {
+    console.log('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Handle the rejection or just log it.
+});
+
+
 const { Client, GatewayIntentBits } = require('discord.js');
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages, // For reading messages
+        GatewayIntentBits.MessageContent // To access message content
+    ]
+});
 
 const BOT_TOKEN = 'MTE0MzM2Nzc5NTY4MjMyMDQzNA.GAgjGJ.5yo4XsnHyoyO7FGYhoIR4OHiuGvaRlqDdyExSY'
 const SERVER_ID = '1141813454244687882';
 
 const { poolPromise } = require('../db');
+const { pokeUser } = require('./discordPoke')
+
 
 
 const CATEGORIES_ALLTIME = [
@@ -62,15 +77,50 @@ const CATEGORIES_WEEKLY = [
 
 client.once('ready', () => {
     console.log('Bot online!')
-    assignWeeklyLeaderboardRoles();
-    assignFarmerRoleToLinkedUsers();
-    assignAllTimeLeaderboardRoles();
-    setInterval(() => {
+    if (process.env.NODE_ENV !== "TESTING") {
         assignWeeklyLeaderboardRoles();
-        assignAllTimeLeaderboardRoles();
         assignFarmerRoleToLinkedUsers();
-    }, 3600000)
+        assignAllTimeLeaderboardRoles();
+        setInterval(() => {
+            assignWeeklyLeaderboardRoles();
+            assignAllTimeLeaderboardRoles();
+            assignFarmerRoleToLinkedUsers();
+        }, 3600000)
+    }
 })
+
+client.on('messageCreate', async (message) => {
+    try {
+        // Check if the message is from a bot (to prevent infinite loops or reactions to other bots)
+        if (message.author.bot) return;
+
+        let msgText = message.content.toLowerCase();
+        let msgSenderID = message.author.id;
+
+        // bot command channel
+        if (message.channel.id === '1162264754954448906') {
+        }
+
+        // Example: Reply when someone says "hello bot"
+        if (msgText === 'hello bot') {
+            message.reply('Hello!');
+        }
+
+        // '!' is for bot command
+        if (msgText.includes('!')) {
+            if (msgText.includes('poke') && msgText.split(" ")) {
+                let targetUsername = msgText.split(" ")[1];
+                let pokeResult = await pokeUser(msgSenderID, targetUsername);
+                message.reply(pokeResult.message)
+            }
+        }
+
+        // You can also add more patterns or commands here
+        // ...
+    } catch (error) {
+        console.log(error)
+    }
+});
 
 async function getSQLData(leaderboardType) {
     try {
@@ -219,7 +269,7 @@ async function removeRoleFromAllMembers(roleName, allMembers) {
         if (member.roles.cache.has(role.id)) {  // Check if member has the role
             try {
                 await member.roles.remove(role);
-                console.log(`remoing ${roleName} from ${member}`)
+                console.log(`removing ${roleName} from ${member}`)
             } catch (error) {
                 console.error(`Error removing role from ${member.user.tag}:`, error);
             }

@@ -61,7 +61,6 @@ module.exports = async function (ws, actionData) {
         SELECT * FROM Upgrades WHERE UserID = ${UserID}
         `);
         let townPerks = userQuery.recordsets[0][0]
-        console.log(townPerks)
 
         let XP = unlockedQuery.recordset[0].XP, exoticPermit = upgradesQuery.recordset[0].exoticPermit, deluxePermit = upgradesQuery.recordset[0].deluxePermits;
         let unlockedGoods = [];
@@ -157,14 +156,14 @@ module.exports = async function (ws, actionData) {
                 } else {
                     type = 'YieldsFertilizer'
                 }
-                let num = 1;
+                let num = 2;
                 let numChance = Math.random()
                 if (numChance < 0.60) {
-                    num = 1;
-                } else if (numChance < 0.95) {
                     num = 2;
-                } else {
+                } else if (numChance < 0.95) {
                     num = 3;
+                } else {
+                    num = 4;
                 }
                 newReward = `${type}${num}`
             }

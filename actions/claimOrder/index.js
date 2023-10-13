@@ -55,15 +55,10 @@ module.exports = async function (ws, actionData) {
         request.multiple = true;
         request.input('UserID', sql.Int, UserID)
 
-
-
-
-
         const goal = unlockedQuery.recordset[0][`goal_${orderNum}`];
         const good = goal.split(" ")[0]
         const numNeeded = goal.split(" ")[1]
         request.input('numNeeded', sql.Int, numNeeded)
-
 
         // calculate reward
         const goldReward = Math.floor(CONSTANTS.Init_Market_Prices[good] * (2 / 3) * numNeeded);
@@ -140,7 +135,6 @@ module.exports = async function (ws, actionData) {
             attempts++;
             let index = Math.floor(Math.random() * unlockedGoods.length);
             randomGood = unlockedGoods[index];
-            console.log(randomGood)
             // We want at least 2 crop orders. 
         } while (allNewGoals.includes(randomGood) && attempts < 10)
 
@@ -168,14 +162,14 @@ module.exports = async function (ws, actionData) {
             } else {
                 type = 'YieldsFertilizer'
             }
-            let num = 1;
+            let num = 2;
             let numChance = Math.random()
             if (numChance < 0.60) {
-                num = 1;
-            } else if (numChance < 0.95) {
                 num = 2;
-            } else {
+            } else if (numChance < 0.95) {
                 num = 3;
+            } else {
+                num = 4;
             }
             newReward = `${type}${num}`
         }
