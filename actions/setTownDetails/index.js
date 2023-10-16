@@ -3,7 +3,6 @@ const { poolPromise } = require('../../db');
 
 
 module.exports = async function (ws, actionData) {
-
     const UserID = ws.UserID;
 
     let newData = actionData.newData;
@@ -27,31 +26,30 @@ module.exports = async function (ws, actionData) {
         request.input(`newDescription`, sql.VarChar(128), newData.description)
         request.input(`newLogoNum`, sql.TinyInt, newData.logoNum)
 
-        // Get your townID (SQL +Profiles)
-        let townIDQuery = await request.query(`
-        SELECT townID FROM Profiles WHERE UserID =@UserID
+        // Get your townID (outside transaction)
+        let townIDQuery = await connection.query(`
+        SELECT townID FROM TownMembers WHERE UserID = ${UserID}
         `)
-        let yourTownID = townIDQuery.recordset[0].townID
-        if (yourTownID === -1) {
+        let yourTownID = townIDQuery?.recordset?.[0]?.townID
+        if (!yourTownID) {
             await transaction.rollback();
             return {
                 message: "You are not in a town"
             };
         }
-        // Set description and check you are leader (SQL -Profiles +Towns)
+        // Set description and check your role has auth to do so (SQL +-Towns +TownMembers)
         request.input('townID', sql.Int, yourTownID)
         let changeQuery = await request.query(`
-            SELECT leader FROM Towns WHERE townID = @townID
             UPDATE Towns SET status = @newStatus, townDescription = @newDescription, townLogoNum = @newLogoNum WHERE townID = @townID
+            SELECT RoleID FROM TownMembers WHERE UserID = @UserID
         `)
-        let leaderUserID = changeQuery.recordset[0].leader;
-        if (leaderUserID !== UserID) {
+        let yourRoleID = changeQuery.recordset?.[0]?.RoleID;
+        if(yourRoleID < 3) {
             await transaction.rollback();
             return {
-                message: "Only the leader of this town can change the status"
+                message: "PROHIBITED: You do not have authority in town"
             };
         }
-
         await transaction.commit();
         return {
             message: "SUCCESS"

@@ -9,43 +9,56 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
+        let earlyIdQuery = await connection.query(`SELECT townID FROM TownMembers WHERE UserID = ${UserID}`)
+        if (earlyIdQuery.recordset.length === 0) {
+            return {
+                message: "Not in a town"
+            }
+        }
+        let earlyTownID = earlyIdQuery.recordset[0].townID;
 
         transaction = new sql.Transaction(connection);
         await transaction.begin()
         const request = new sql.Request(transaction);
         request.input(`UserID`, sql.Int, UserID);
+        request.input(`earlyTownID`, sql.Int, earlyTownID)
 
-        // Set townID to -1 (default for no town) (SQL +Profiles)
-        let profileTownQuery = await request.query(`
-        SELECT townID FROM Profiles WHERE UserID = @UserID
-        UPDATE Profiles SET townID = -1 WHERE UserID = @UserID
+        // Decrement town member count (SQL +Towns)
+        let memberCountQuery = await request.query(`
+        UPDATE Towns SET memberCount = memberCount - 1 WHERE townID = @earlyTownID
+        SELECT memberCount FROM Towns WHERE townID = @earlyTownID
         `)
-        if (profileTownQuery.recordset[0].townID === -1) {
+        // SQL -Towns +TownMembers
+        let myRoleQuery = await request.query(`
+        SELECT RoleID, townID FROM TownMembers WHERE UserID = @UserID
+        `)
+        let myRoleID = myRoleQuery.recordset?.[0]?.RoleID;
+        let myTownID = myRoleQuery.recordset?.[0]?.townID;
+        let numMembers = memberCountQuery.recordset[0].memberCount;
+
+        if (myTownID !== earlyTownID) {
             await transaction.rollback();
             return {
-                message: "Not in a town"
+                message: "Town operation sync issue"
             };
         }
 
-        request.input('townID', sql.Int, profileTownQuery.recordset[0].townID)
-        // Decrement town and check logic for if you are leader (SQL -Profiles +Towns)
-        let memberCountQuery = await request.query(`
-        SELECT leader, memberCount FROM Towns WHERE townID = @townID
-        UPDATE Towns SET memberCount = memberCount - 1 WHERE townID = @townID
-        `)
-        if (memberCountQuery.recordset[0].leader === UserID && memberCountQuery.recordset[0].memberCount > 1) {
+        if (myRoleID === 4 && numMembers > 0) {
             await transaction.rollback();
             return {
                 message: "Must promote new leader before leaving nonempty town"
             };
         }
-        if (memberCountQuery.recordset[0].leader === UserID && memberCountQuery.recordset[0].memberCount === 1) {
-            // They are the last person. Delete the town (SQL -Towns +TownGoals)
+        let profileTownQuery = await request.query(`
+            DELETE FROM TownMembers WHERE UserID = @UserID
+        `)
+        // If last person and leader, delete town goals (SQL -TownMembers +TownGoals)
+        if (myRoleID === 4 && numMembers === 0) {
             await request.query(`
-                DELETE FROM Towns WHERE townID = @townID
-                DELETE FROM TownGoals WHERE townID = @townID
+                DELETE FROM TownGoals WHERE townID = @earlyTownID
             `)
         }
+
         // reset contributions and townID in contributions (SQL -TownGoals +TownContributions)
         await request.query(`
             UPDATE TownContributions SET 
@@ -55,6 +68,13 @@ module.exports = async function (ws, actionData) {
             WHERE UserID = @UserID
         `)
         await transaction.commit();
+
+        if (myRoleID === 4 && numMembers === 0) {
+            // They are the last person. Delete the town (outside transaction)
+            await connection.query(`
+                DELETE FROM Towns WHERE townID = ${earlyTownID}
+            `)
+        }
         return {
             message: "SUCCESS"
         }

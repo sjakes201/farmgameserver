@@ -39,6 +39,7 @@ module.exports = async function (ws, actionData) {
         `)
         let newLeaderTownID = inTownQuery.recordsets[0][0].townID;
         let oldLeaderTownID = inTownQuery.recordsets[1][0].townID;
+        console.log(newLeaderTownID, oldLeaderTownID)
         if (newLeaderTownID !== oldLeaderTownID) {
             await transaction.rollback();
             return {
@@ -51,7 +52,9 @@ module.exports = async function (ws, actionData) {
         let newLeaderQuery = await request.query(`
             SELECT leader FROM Towns WHERE townID = ${oldLeaderTownID}
             UPDATE Towns SET leader = @newLeaderID WHERE townID = ${oldLeaderTownID} 
+            UPDATE TownMembers set RoleID = 4 WHERE UserID = ${newLeaderTownID}
         `)
+        console.log(newLeaderQuery)
         if (newLeaderQuery.recordset[0].leader !== UserID) {
             await transaction.rollback();
             return {

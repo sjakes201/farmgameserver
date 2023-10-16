@@ -43,7 +43,6 @@ const kickTownMember = require('./actions/kickTownMember/index')
 const createTown = require('./actions/createTown/index')
 const joinTown = require('./actions/joinTown/index')
 const leaveTown = require('./actions/leaveTown/index')
-const promoteTownMember = require('./actions/promoteTownMember/index')
 const setTownDetails = require('./actions/setTownDetails/index')
 const setTownGoal = require('./actions/setTownGoal/index')
 const claimTownGoal = require('./actions/claimTownGoal/index')
@@ -53,6 +52,11 @@ const getTopTowns = require('./actions/getTopTowns/index')
 const linkDiscordAcc = require('./actions/linkDiscordAcc/index')
 const getProfileData = require('./actions/getProfileData/index')
 const pokeUser = require('./actions/pokeUser/index')
+const createTownMessage = require('./actions/createTownMessage/index')
+const getTownMessages = require('./actions/getTownMessages/index')
+const promoteTownMemberRole = require('./actions/promoteTownMemberRole/index')
+const demoteTownMember = require('./actions/demoteTownMember/index')
+const readTownMessage = require('./actions/readTownMessage/index')
 
 // Other imports
 const url = require('url');
@@ -63,6 +67,7 @@ const mainBot = require('./discordBot/mainBot');
 const scheduleTasks = require('./cronJobs');
 
 let connectedUsers = [];
+// testing
 
 try {
   let intervalID = setInterval(() => {
@@ -126,6 +131,27 @@ setInterval(() => {
     console.log(error)
   }
 }, 10000)
+
+function broadcastToTown(townID, message, username, messageID) {
+  try {
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.townID === townID) {
+        client.send(JSON.stringify({
+          type: 'town_message',
+          newMessageInfo: {
+            content: message,
+            timestamp: Date.now(),
+            username: username,
+            messageID: messageID
+          }
+        }))
+      }
+    });
+  } catch (error) {
+    console.log(`ERROR broadcasting town message to townID ${townID}, message: ${message}`, error)
+  }
+}
+
 
 wss.on('connection', async (ws, req) => {
   try {
@@ -334,10 +360,6 @@ wss.on('connection', async (ws, req) => {
             let ltData = await leaveTown(ws, params)
             ws.send(JSON.stringify({ action: 'leaveTown', body: ltData }));
             break;
-          case 'promoteTownMember':
-            let ptmData = await promoteTownMember(ws, params)
-            ws.send(JSON.stringify({ action: 'promoteTownMember', body: ptmData }));
-            break;
           case 'setTownDetails':
             let stdData = await setTownDetails(ws, params)
             ws.send(JSON.stringify({ action: 'setTownDetails', body: stdData }));
@@ -348,7 +370,6 @@ wss.on('connection', async (ws, req) => {
             break;
           case 'createTown':
             let crtData = await createTown(ws, params)
-            console.log('created town')
             ws.send(JSON.stringify({ action: 'createTown', body: crtData }));
             break;
           case 'claimTownGoal':
@@ -378,6 +399,36 @@ wss.on('connection', async (ws, req) => {
           case 'pokeUser':
             let pokeData = await pokeUser(ws, params)
             ws.send(JSON.stringify({ action: 'pokeUser', body: pokeData }));
+            break;
+          case 'getTownMessages':
+            let townMessagesData = await getTownMessages(ws, params)
+            // Assign town ID to connected user object for broadcasting now that they are here, then delete
+            ws.townID = townMessagesData.userTownID;
+            delete townMessagesData.userTownID;
+            ws.send(JSON.stringify({ action: 'getTownMessages', body: townMessagesData }));
+            break;
+          case 'createTownMessage':
+            let msgData = await createTownMessage(ws, params)
+            let userTownID = msgData.userTownID;
+            let username = msgData.username;
+            let messageID = msgData.messageID;
+            if (userTownID > 0 && msgData.messageContent && username && messageID) {
+              broadcastToTown(userTownID, msgData.messageContent, username, messageID)
+            }
+            delete msgData.userTownID;
+            ws.send(JSON.stringify({ action: 'createTownMessage', body: msgData }));
+            break;
+          case 'promoteTownMemberRole':
+            let promRData = await promoteTownMemberRole(ws, params)
+            ws.send(JSON.stringify({ action: 'promoteTownMemberRole', body: promRData }));
+            break;
+          case 'demoteTownMember':
+            let demData = await demoteTownMember(ws, params)
+            ws.send(JSON.stringify({ action: 'demoteTownMember', body: demData }));
+            break;
+          case 'readTownMessage':
+            let rtmData = await readTownMessage(ws, params)
+            ws.send(JSON.stringify({ action: 'readTownMessage', body: rtmData }));
             break;
 
         }

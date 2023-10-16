@@ -10,7 +10,7 @@ module.exports = async function (ws, actionData) {
     let newGoal = actionData.newGoal;
     let goalSlot = actionData.goalSlot;
 
-    if (!Object.keys(TOWNINFO.goalQuantities).includes(newGoal) || ![1,2,3,4].includes(goalSlot)) {
+    if (!Object.keys(TOWNINFO.goalQuantities).includes(newGoal) || ![1, 2, 3, 4].includes(goalSlot)) {
         return {
             message: `Invalid setTownGoal Inputs ${typeof newGoal} ${newGoal} and ${typeof goalSlot} ${goalSlot}`
         };
@@ -30,50 +30,38 @@ module.exports = async function (ws, actionData) {
         let goalQuantity = TOWNINFO.goalQuantities[newGoal]
         connection = await poolPromise;
 
-        transaction = new sql.Transaction(connection);
-        await transaction.begin()
-        const request = new sql.Request(transaction);
+        const request = new sql.Request(connection);
         request.input(`UserID`, sql.Int, UserID);
 
-        // Get your townID (SQL +Profiles)
+        // Get your townID 
         let townIDQuery = await request.query(`
-        SELECT townID FROM Profiles WHERE UserID = @UserID
+        SELECT townID, RoleID FROM TownMembers WHERE UserID = @UserID
         `)
-        let yourTownID = townIDQuery.recordset[0].townID
-        if (yourTownID === -1) {
-            await transaction.rollback();
+        let yourTownID = townIDQuery.recordset?.[0]?.townID
+        let yourRoleID = townIDQuery.recordset?.[0]?.RoleID
+        if (!yourTownID || !yourRoleID) {
             return {
                 message: "You are not in a town"
             };
         }
-
-        // Set TownGoal and check you are leader (SQL -Profiles +-Towns +TownGoals)
-        request.input('townID', sql.Int, yourTownID)
-        let changeQuery = await request.query(`
-            SELECT leader FROM Towns WHERE townID = @townID
-            UPDATE TownGoals SET goal_${goalSlot} = '${newGoal} ${goalQuantity}', progress_${goalSlot} = 0 WHERE townID = @townID
-        `)
-
-        let leaderUserID = changeQuery.recordset[0].leader;
-        if (leaderUserID !== UserID) {
-            await transaction.rollback();
+        if (yourRoleID < 3) {
             return {
-                message: "Only the leader of this town can change the status"
-            };
+                message: "You do not have auth in town to set goals"
+            }
         }
 
-        // Reset slot progress in TownContributions for all town members (SQL -TownGoals +TownContributions)
+        // Set TownGoal (SQL +-TownGoals +TownContributions)
+        request.input('townID', sql.Int, yourTownID)
         await request.query(`
-        UPDATE TownContributions SET progress_${goalSlot} = 0 WHERE townID = @townID
+            UPDATE TownGoals SET goal_${goalSlot} = '${newGoal} ${goalQuantity}', progress_${goalSlot} = 0 WHERE townID = @townID
+            UPDATE TownContributions SET progress_${goalSlot} = 0 WHERE townID = @townID
         `)
 
-        await transaction.commit();
         return {
             message: "SUCCESS"
         }
     } catch (error) {
         console.log(error);
-        if (transaction) await transaction.rollback()
         return {
             message: "UNCAUGHT ERROR"
         };

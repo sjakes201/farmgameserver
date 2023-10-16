@@ -36,31 +36,32 @@ module.exports = async function (ws, actionData) {
         request.input(`UserID`, sql.Int, UserID);
         request.input(`townID`, sql.Int, townID);
 
+        // Check for opening (SQL +Towns)
+        let openTown = await request.query(`
+        UPDATE Towns SET memberCount = memberCount + 1 WHERE townID = @townID
+        SELECT memberCount, status FROM Towns WHERE townID = @townID
+        `)
+        if (openTown.recordset[0].memberCount > TOWNINFO.VALUES.townMemberLimit || openTown.recordset[0].status !== 'OPEN') {
+            await transaction.rollback();
+            return {
+                message: `Town at capacity or closed to new members`
+            };
+        }
 
-        // Check profiles for existing townID and set to new (SQL +Profiles)
+        // Check for existing town membership and set to new (SQL -Towns +-TownMembers +TownContributions)
+        // 1 is role id for member
         let changeTownQuery = await request.query(`
-         SELECT townID FROM Profiles WHERE UserID = @UserID
-         UPDATE Profiles SET townID = @townID WHERE UserID = @UserID
+         SELECT townID FROM TownMembers WHERE UserID = @UserID
+         INSERT INTO TownMembers (UserID, RoleID, townID) VALUES (@UserID, 1, @townID)
+         UPDATE TownContributions SET townID = @townID WHERE UserID = @UserID
          `)
-        if (changeTownQuery.recordset[0].townID !== -1) {
+        if (changeTownQuery.recordset.length !== 0) {
             await transaction.rollback();
             return {
                 message: "Already in a town, leave before joining a new one"
             };
         }
 
-        // Check for open status, increment memberCount, set townContributions (SQL -Profiles +-Towns +TownContributions)
-        let memberCountQuery = await request.query(`
-        UPDATE Towns SET memberCount = memberCount + 1 WHERE townID = @townID
-        SELECT memberCount, status FROM Towns WHERE townID = @townID
-        UPDATE TownContributions SET townID = @townID WHERE UserID = @UserID
-        `)
-        if (memberCountQuery.recordset[0].memberCount > TOWNINFO.VALUES.townMemberLimit || memberCountQuery.recordset[0].status !== 'OPEN') {
-            await transaction.rollback();
-            return {
-                message: `Town at capacity or closed to new members`
-            };
-        }
         await transaction.commit();
         return {
             message: "SUCCESS"

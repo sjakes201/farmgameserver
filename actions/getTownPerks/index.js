@@ -6,7 +6,6 @@ module.exports = async function (ws, actionData) {
     // GET USERID
     const UserID = ws.UserID;
 
-
     let connection;
     try {
         connection = await poolPromise;
@@ -15,13 +14,13 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID);
         let allInfo = await request.query(`
         SELECT 
-            T.townName, T.growthPerkLevel, T.partsPerkLevel, T.orderRefreshLevel, t.animalPerkLevel
+            T.townName, T.growthPerkLevel, T.partsPerkLevel, T.orderRefreshLevel, T.animalPerkLevel
         FROM 
-            Profiles P
+            TownMembers TM
         INNER JOIN 
-            Towns T ON P.townID = T.townID
+            Towns T ON TM.townID = T.townID
         WHERE 
-            P.UserID = ${UserID};
+            TM.UserID = @UserID;
         `);
 
         if (allInfo.recordset.length === 0) {
@@ -40,11 +39,4 @@ module.exports = async function (ws, actionData) {
             message: 'Database connection failed'
         };
     }
-
-
 }
-
-
-
-
-

@@ -31,36 +31,29 @@ module.exports = async function (ws, actionData) {
 
 
         try {
-            // Create the town without UserID to get the next townID, need to do this outside transaction because of SQL table access order standards
+            // Create the town without UserID to get the next townID, DOES NOT OBEY SQL ACCESS ORDER STANDARDS NEED TO FIX
             let claimTownID = await request.query(`
                 INSERT INTO Towns (townName, townDescription, memberCount) 
                 OUTPUT INSERTED.townID
                 VALUES (@townName, @defaultDescription, 1) 
             `)
             let generatedTownID = claimTownID.recordset[0].townID;
-
-            // Check for already being in a town (SQL -Towns +Profiles)
             request.input('townID', sql.Int, generatedTownID)
-            let changeTownQuery = await request.query(`
-                SELECT townID FROM Profiles WHERE UserID = @UserID
-                UPDATE Profiles SET townID = @townID WHERE UserID = @UserID
+
+            let checkMemberQuery = await request.query(`
+                SELECT townID FROM TownMembers WHERE UserID = @UserID
             `)
-            if (changeTownQuery.recordset[0].townID !== -1) {
-                // Remove town from database, they were already in one (on connection, not transaction)
+            if(checkMemberQuery.recordset.length !== 0) {
                 await transaction.rollback();
-                await connection.query(`
-                DELETE FROM Towns WHERE townID = ${generatedTownID}
-                `)
                 return {
-                    message: "Already in a town, leave before creating a new one"
-                };
+                    message: "Already in a town"
+                }
+            } else {
+                // 4 is role id for leader
+                let createMember = await request.query(`
+                    INSERT INTO TownMembers (UserID, RoleID, townID) VALUES (@UserID, 4, @townID)
+                `)
             }
-
-            // Claim leadership of town after profile verficiation of not already being in a town
-            let townCreateQuery = await request.query(`
-                UPDATE Towns SET leader = @UserID WHERE townID = @townID
-            `)
-
 
             // MSSQL Create row in town goals, using townID (SQL -Towns +-TownGoals +TownContributions)
             await request.query(`

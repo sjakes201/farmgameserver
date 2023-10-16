@@ -33,9 +33,9 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
         const requestConn = new sql.Request(connection);
 
         // Not in transaction: get townID of user who is contributing
-        let townIDQuery = await requestConn.query(`SELECT townID FROM Profiles WHERE UserID = ${UserID}`);
-        let townID = townIDQuery.recordset[0].townID;
-        if (townID === -1) {
+        let townIDQuery = await requestConn.query(`SELECT townID FROM TownMembers WHERE UserID = ${UserID}`);
+        let townID = townIDQuery.recordset?.[0]?.townID;
+        if (!townID) {
             return;
         }
 
@@ -82,7 +82,7 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                     }
 
                     // Outside of transaction, get all UserID's for people in this town
-                    let membersQuery = await requestConn.query(`SELECT UserID FROM Profiles WHERE townID = @townID`)
+                    let membersQuery = await requestConn.query(`SELECT UserID FROM TownMembers WHERE townID = @townID`)
                     let members = membersQuery.recordset;
                     // Set unclaimed goal in town contributions for all users in town who don't have a previously unclaimed goal in that slot (SQL -TownGoals +TownContributions)
                     let userWhere = '('

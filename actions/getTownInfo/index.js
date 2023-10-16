@@ -24,16 +24,23 @@ module.exports = async function (ws, actionData) {
         request.input(`townName`, sql.VarChar(32), townName)
 
         let townInfo = await request.query(`
-        SELECT townID FROM Profiles WHERE UserID = @UserID
+        SELECT townID FROM TownMembers WHERE UserID = @UserID
         SELECT * FROM Towns WHERE townName = @townName
         `)
+        const myTownID = townInfo?.recordsets?.[0]?.[0]?.townID;
+
         let targetTown = townInfo.recordsets[1][0]
         // Are you in the town? No = you are just viewing, and will receive less information
         // TODO: add contributions fetch to this
         let moreTownInfo = await request.query(`
-        SELECT UserID FROM Profiles WHERE townID = ${targetTown.townID}
+        SELECT UserID, RoleID FROM TownMembers WHERE townID = ${targetTown.townID}
         SELECT * FROM TownGoals WHERE townID = ${targetTown.townID}
         `)
+        let myRoleID = moreTownInfo.recordsets[0].filter((obj) => {
+            return obj.UserID === UserID
+        })?.[0]?.RoleID;
+
+
         // goal number is at index - 1
         // Towngoals 1,2,3 and 4 are selected by leader, 5,6,7,8 are random
         let goals = [moreTownInfo.recordsets[1][0].goal_1, moreTownInfo.recordsets[1][0].goal_2, moreTownInfo.recordsets[1][0].goal_3, moreTownInfo.recordsets[1][0].goal_4, moreTownInfo.recordsets[1][0].goal_5, moreTownInfo.recordsets[1][0].goal_6, moreTownInfo.recordsets[1][0].goal_7, moreTownInfo.recordsets[1][0].goal_8]
@@ -57,26 +64,20 @@ module.exports = async function (ws, actionData) {
             }
         })
 
-        let myControls;
-        if (targetTown.leader === UserID) {
-            myControls = 'leader'
-        } else if (allMembers.some((e) => e.UserID === UserID)) {
-            myControls = 'member'
-        } else {
-            myControls = 'visitor'
-        }
-
         let membersInfoQuery = await request.query(`
-        SELECT UserID, Username, LastSeen FROM LOGINS ${userWhereQuery}
+        SELECT UserID, Username, LastSeen FROM Logins ${userWhereQuery}
         SELECT UserID, XP FROM Profiles ${userWhereQuery}
+        SELECT RoleID, UserID FROM TownMembers ${userWhereQuery}
         SELECT UserID, progress_1, progress_2, progress_3, progress_4, progress_5, progress_6, progress_7, progress_8 FROM TownContributions ${userWhereQuery}
         SELECT unclaimed_1, unclaimed_2, unclaimed_3, unclaimed_4, unclaimed_5, unclaimed_6, unclaimed_7, unclaimed_8 FROM TownContributions WHERE UserID = @UserID
         `);
+
         let playersData = []
         membersInfoQuery.recordsets[0].forEach((member) => {
             // find member in second set, will not always be at same index
-            let targetPlayerGoals = membersInfoQuery.recordsets[2].filter((p) => p.UserID === member.UserID)[0];
+            let targetPlayerGoals = membersInfoQuery.recordsets[3].filter((p) => p.UserID === member.UserID)[0];
             let targetPlayerInfo = membersInfoQuery.recordsets[1].filter((p) => p.UserID === member.UserID)[0];
+            let roleID = membersInfoQuery.recordsets[2].filter((p) => p.UserID === member.UserID)[0].RoleID;
             let playerContributions = {};
             goalsData.forEach((goalObj, index) => {
                 if (goalObj.good in playerContributions) {
@@ -102,18 +103,21 @@ module.exports = async function (ws, actionData) {
             let playerData = {
                 username: member.Username,
                 xp: targetPlayerInfo.XP,
-                role: targetTown.leader === member.UserID ? 'leader' : 'member',
+                roleID: roleID
             }
             // Only provide contributions if they are in the town
-            if (myControls !== 'visitor') {
+            if (myRoleID) {
                 playerData.contributions = playerContributions;
                 // playerData.reportedTimePassed = reportedTimePassed;
             }
             playersData.push(playerData)
         })
-
-        let myUnclaimed = membersInfoQuery.recordsets[3][0];
-        if (myControls === 'visitor') {
+        let imInTown = false;
+        if (townInfo?.recordsets?.[0]?.[0]?.townID) {
+            imInTown = true;
+        }
+        let myUnclaimed = membersInfoQuery.recordsets[4][0];
+        if (!myRoleID) {
             return {
                 townLogoNum: targetTown.townLogoNum,
                 townName: targetTown.townName,
@@ -127,10 +131,10 @@ module.exports = async function (ws, actionData) {
                 orderRefreshPerkLevel: targetTown.orderRefreshLevel,
                 animalPerkLevel: targetTown.animalPerkLevel,
                 // Data personal to requester
-                myControls: myControls,
                 myUnclaimed: myUnclaimed,
-                imInTown: townInfo.recordsets[0][0].townID !== -1,
-                townXP: targetTown.townXP
+                imInTown: imInTown,
+                townXP: targetTown.townXP,
+                myRoleID: myRoleID
             }
         }
         return {
@@ -146,10 +150,10 @@ module.exports = async function (ws, actionData) {
             orderRefreshPerkLevel: targetTown.orderRefreshLevel,
             animalPerkLevel: targetTown.animalPerkLevel,
             // Data personal to requester
-            myControls: myControls,
             myUnclaimed: myUnclaimed,
-            imInTown: townInfo.recordsets[0][0].townID !== -1,
-            townXP: targetTown.townXP
+            imInTown: imInTown,
+            townXP: targetTown.townXP,
+            myRoleID: myRoleID
         }
 
     } catch (error) {
