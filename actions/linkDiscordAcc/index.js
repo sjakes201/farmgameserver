@@ -52,9 +52,12 @@ module.exports = async function (ws, actionData) {
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback();
+        return {
+            message: "error"
+        }
     }
 
     return {
-        message: "reached bottom"
+        message: "success"
     }
 }
