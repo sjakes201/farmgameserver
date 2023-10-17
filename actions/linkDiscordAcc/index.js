@@ -16,7 +16,7 @@ module.exports = async function (ws, actionData) {
             client_secret: '320UL9hiVu6WpjR3QwaVfhhdpn1KZhW5',
             grant_type: 'authorization_code',
             code: code,
-            redirect_uri: 'https://farmgame.live/account',
+            redirect_uri: 'https://farmgame.live/discordAuth',
             scope: 'identify'
         }), {
             headers: {
