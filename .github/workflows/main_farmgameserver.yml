@@ -51,6 +51,6 @@ jobs:
         id: deploy-to-webapp
         with:
           app-name: 'farmgameserver'
-          slot-name: 'farmgameserver-staging'
+          slot-name: 'staging'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_559BFA1141204718AE5CB76BE20F1C4E }}
           package: .
