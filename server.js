@@ -444,7 +444,6 @@ wss.on('connection', async (ws, req) => {
   } catch (error) {
     console.log(error)
   }
-
 });
 
 const port = process.env.PORT || 8080
