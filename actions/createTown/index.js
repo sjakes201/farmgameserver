@@ -74,7 +74,7 @@ module.exports = async function (ws, actionData) {
             await transaction.commit()
             return { message: 'SUCCESS' }
         } catch (sqlError) {
-
+            console.log(sqlError)
             if (sqlError.number === 2601 || sqlError.number === 2627) {
                 // Unique constraint violation error (error code 2601 or 2627)
             if (transaction) await transaction.rollback()

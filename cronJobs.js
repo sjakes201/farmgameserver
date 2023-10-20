@@ -56,6 +56,5 @@ const scheduleTasks = () => {
     });
 };
 
-
 scheduleTasks();
 console.log("Started cronjob file")
