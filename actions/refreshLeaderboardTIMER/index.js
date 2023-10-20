@@ -85,7 +85,35 @@ module.exports = async function (leaderboardCycle) {
                     FROM Leaderboard l
                     JOIN ##TempData_${category} t ON l.UserID = t.UserID;
                 `);
+
+
+                const top3Result = await request.query(`
+                SELECT TOP 3 UserID, Value
+                FROM ##TempData_${category}
+                ORDER BY Rank ASC;
+                `);
+
+                if (top3Result.recordset?.length === 3) {
+                    podiumQuery = `
+                    UPDATE LeaderboardPodium SET
+                    firstUsername = (SELECT Username FROM Logins WHERE UserID = ${top3Result.recordset[0].UserID}),
+                    firstCount = ${top3Result.recordset[0].Value},
+
+                    secondUsername = (SELECT Username FROM Logins WHERE UserID = ${top3Result.recordset[1].UserID}),
+                    secondCount = ${top3Result.recordset[1].Value},
+                    
+                    thirdUsername = (SELECT Username FROM Logins WHERE UserID = ${top3Result.recordset[2].UserID}),
+                    thirdCount = ${top3Result.recordset[2].Value}
+
+                    WHERE category = '${category}' AND leaderboardType = 'ALLTIME'
+                    `
+                    await request.query(podiumQuery)
+                }
+
                 await request.query(`DROP TABLE ##TempData_${category};`);
+
+                // Update LeaderboardPodium for top 3
+
                 await transaction.commit();
             } catch (error) {
                 console.error(`Error processing category ${category}:`, error);
@@ -146,6 +174,31 @@ module.exports = async function (leaderboardCycle) {
                     FROM TempLeaderboard l
                     JOIN ##TempData_Temp_${category} t ON l.UserID = t.UserID;
                 `);
+
+                // Set podium
+                const top3Result = await request.query(`
+                SELECT TOP 3 UserID, Value
+                FROM ##TempData_Temp_${category}
+                ORDER BY Rank ASC;
+                `);
+
+                if (top3Result.recordset?.length === 3) {
+                    podiumQuery = `
+                    UPDATE LeaderboardPodium SET
+                    firstUsername = (SELECT Username FROM Logins WHERE UserID = ${top3Result.recordset[0].UserID}),
+                    firstCount = ${top3Result.recordset[0].Value},
+
+                    secondUsername = (SELECT Username FROM Logins WHERE UserID = ${top3Result.recordset[1].UserID}),
+                    secondCount = ${top3Result.recordset[1].Value},
+                    
+                    thirdUsername = (SELECT Username FROM Logins WHERE UserID = ${top3Result.recordset[2].UserID}),
+                    thirdCount = ${top3Result.recordset[2].Value}
+
+                    WHERE category = '${category}' AND leaderboardType = 'WEEKLY'
+                    `
+                    await request.query(podiumQuery)
+                }
+
                 await request.query(`DROP TABLE ##TempData_Temp_${category};`);
 
                 await transaction.commit();
