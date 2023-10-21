@@ -1,7 +1,10 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('./TOWNINFO');
+const CONSTANTS = require ('./CONSTANTS')
 const { calcTownLevel, calcPerkLevels } = require("./townHelpers.js")
+const { townServerBroadcast } = require('../../broadcastFunctions')
+
 
 
 module.exports = async function (UserID, contributedGood, contributedQuantity) {
@@ -95,6 +98,8 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                     UPDATE TownContributions SET progress_${goalNum} = 0 WHERE UserID in ${userWhere}
                     `)
                     await transaction.commit();
+                    townServerBroadcast(townID, `Town has completed goal ${CONSTANTS.InventoryDescriptions[goalGood][0]} ${parseInt(quantityNeeded).toLocaleString()}!`)
+
                     inTransaction = false;
                     goalMatch = true;
                     // Outside of transaction, add XP then check for new perk levels. XP is 1200 for animal produce goals, 1000 for crop goals
@@ -106,22 +111,30 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                     `)
                     let townLevel = calcTownLevel(townXP.recordset[0].townXP);
                     let perkLevels = calcPerkLevels(townLevel);
+                    let levelledUp = false;
 
                     if (perkLevels.growthPerk !== townXP.recordset[0].growthPerkLevel) {
                         await requestConn.query(`
                         UPDATE Towns SET growthPerkLevel = ${perkLevels.growthPerk} WHERE townID = @townID`)
+                        levelledUp = true;
                     }
                     if (perkLevels.partsPerk !== townXP.recordset[0].partsPerkLevel) {
                         await requestConn.query(`
                         UPDATE Towns SET partsPerkLevel = ${perkLevels.partsPerk} WHERE townID = @townID`)
+                        levelledUp = true;
                     }
                     if (perkLevels.orderRefreshPerk !== townXP.recordset[0].orderRefreshLevel) {
                         await requestConn.query(`
                         UPDATE Towns SET orderRefreshLevel = ${perkLevels.orderRefreshPerk} WHERE townID = @townID`)
+                        levelledUp = true;
                     }
                     if (perkLevels.animalPerk !== townXP.recordset[0].animalPerkLevel) {
                         await requestConn.query(`
                         UPDATE Towns SET animalPerkLevel = ${perkLevels.animalPerk} WHERE townID = @townID`)
+                        levelledUp = true;
+                    }
+                    if(levelledUp) {
+                        townServerBroadcast(townID, `Town has levelled up!`)
                     }
                 } else {
                     // They contributed to a goal, but it is not completed, so just increment TownContributions

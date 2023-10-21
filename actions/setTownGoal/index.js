@@ -1,6 +1,8 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO')
+const CONSTANTS = require('../shared/CONSTANTS')
+const { townServerBroadcast } = require('../../broadcastFunctions')
 
 
 module.exports = async function (ws, actionData) {
@@ -23,7 +25,6 @@ module.exports = async function (ws, actionData) {
 
     */
 
-
     let connection;
     let transaction;
     try {
@@ -31,15 +32,19 @@ module.exports = async function (ws, actionData) {
         connection = await poolPromise;
 
         const request = new sql.Request(connection);
+        request.multiple = true;
         request.input(`UserID`, sql.Int, UserID);
 
         // Get your townID 
         let townIDQuery = await request.query(`
         SELECT townID, RoleID FROM TownMembers WHERE UserID = @UserID
+        SELECT Username from Logins WHERE UserID = @UserID
         `)
-        let yourTownID = townIDQuery.recordset?.[0]?.townID
-        let yourRoleID = townIDQuery.recordset?.[0]?.RoleID
-        if (!yourTownID || !yourRoleID) {
+        let yourTownID = townIDQuery.recordsets?.[0]?.[0]?.townID;
+        let yourRoleID = townIDQuery.recordsets?.[0]?.[0]?.RoleID;
+        let yourUsername = townIDQuery.recordsets?.[1]?.[0].Username;
+        
+        if (!yourTownID || !yourRoleID || !yourUsername) {
             return {
                 message: "You are not in a town"
             };
@@ -56,6 +61,7 @@ module.exports = async function (ws, actionData) {
             UPDATE TownGoals SET goal_${goalSlot} = '${newGoal} ${goalQuantity}', progress_${goalSlot} = 0 WHERE townID = @townID
             UPDATE TownContributions SET progress_${goalSlot} = 0 WHERE townID = @townID
         `)
+        townServerBroadcast(yourTownID, `${yourUsername} has set a new town goal: ${CONSTANTS.InventoryDescriptions[newGoal][0]} ${parseInt(goalQuantity).toLocaleString()}`)
 
         return {
             message: "SUCCESS"

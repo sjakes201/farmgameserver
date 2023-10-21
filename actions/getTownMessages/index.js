@@ -16,19 +16,27 @@ module.exports = async function (ws, actionData) {
         let messages = await request.query(`
             DECLARE @TownID INT
             DECLARE @LastSeenMessage INT
-
+            
             SELECT @TownID = townID, @LastSeenMessage = lastSeenMessage FROM TownMembers WHERE UserID = @UserID;
-
-            SELECT TOP 50 TM.content, TM.timestamp, Tm.messageID, L.Username
+            
+            SELECT TOP 50 
+                TM.content, 
+                TM.timestamp, 
+                TM.messageID, 
+                CASE 
+                    WHEN TM.senderID = 0 THEN 'Server'
+                    ELSE L.Username
+                END AS Username
             FROM TownMessages TM
-            INNER JOIN Logins L ON TM.senderID = L.UserID
+            LEFT JOIN Logins L ON TM.senderID = L.UserID
             WHERE TM.townID = @TownID
             ORDER BY TM.timestamp DESC;
-
+            
             SELECT @TownID AS userTownID, @LastSeenMessage as lastSeenMessage
         `)
+
         let userTownID = messages.recordsets[1][0].userTownID;
-        if(userTownID) {
+        if (userTownID) {
             return {
                 messageHistory: messages.recordsets[0],
                 userTownID: messages.recordsets[1][0].userTownID,

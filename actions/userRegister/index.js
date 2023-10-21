@@ -39,6 +39,12 @@ module.exports = async function (ws, actionData) {
         };
     }
 
+    if(user === 'Server') {
+        return {
+            message: "Invalid username"
+        }
+    }
+
     // Encrypt password
     let encrypted_pass = await bcrypt.hash(pass, BCRYPT_ROUNDS);
 

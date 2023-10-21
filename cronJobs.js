@@ -41,7 +41,7 @@ const scheduleTasks = () => {
     let leaderboardCycle = 1;
     // Cycle every 3 minutes, total refresh every 12
     cron.schedule('*/3 * * * *', async () => {
-        if(process.env.RUN_LEADERBOARD_REFRESH === "true") {
+        if (process.env.RUN_LEADERBOARD_REFRESH === "true") {
             try {
                 leaderboardCycle = (leaderboardCycle % 4) + 1;
 
@@ -54,7 +54,8 @@ const scheduleTasks = () => {
             console.log("Not running leaderboard refresh")
         }
     });
+    console.log("Started cronjob file")
 };
 
-scheduleTasks();
-console.log("Started cronjob file")
+
+module.exports = { scheduleTasks }

@@ -1,5 +1,6 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db'); 
+const { townServerBroadcast } = require('../../broadcastFunctions')
 
 module.exports = async function (ws, actionData) {
 
@@ -82,6 +83,7 @@ module.exports = async function (ws, actionData) {
             WHERE UserID = @kickedUserID
         `)
         await transaction.commit();
+        townServerBroadcast(yourTownID, `${kickedMember} has been kicked from the town.`)
         return {
             message: "SUCCESS"
         }

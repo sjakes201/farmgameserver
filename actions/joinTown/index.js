@@ -1,6 +1,7 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO');
+const { townServerBroadcast } = require('../../broadcastFunctions')
 
 module.exports = async function (ws, actionData) {
 
@@ -21,14 +22,20 @@ module.exports = async function (ws, actionData) {
 
         // Get townID associated with the name, doing this before the transaction requires that towns cannot change names else edge case where the name changes before transaction starts
         let nameRequest = new sql.Request(connection);
+        nameRequest.multiple = true;
         nameRequest.input('townName', sql.VarChar(32), townName)
-        let nameQuery = await nameRequest.query(`SELECT townID FROM Towns WHERE townName = @townName`)
-        if (nameQuery.recordset.length === 0) {
+        nameRequest.input('UserID', sql.Int, UserID)
+        let preQuery = await nameRequest.query(`
+        SELECT townID FROM Towns WHERE townName = @townName
+        SELECT Username FROM Logins WHERE USerID = @UserID
+        `)
+        if (preQuery.recordsets[0].length === 0) {
             return {
                 message: `No town goes by name ${townName}`
             };
         }
-        let townID = nameQuery.recordset[0].townID;
+        let townID = preQuery.recordsets[0][0].townID;
+        let username = preQuery.recordsets[1][0].Username;
 
         transaction = new sql.Transaction(connection);
         await transaction.begin()
@@ -63,6 +70,7 @@ module.exports = async function (ws, actionData) {
         }
 
         await transaction.commit();
+        townServerBroadcast(townID, `${username} has joined the town!`)
         return {
             message: "SUCCESS"
         }

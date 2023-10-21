@@ -1,5 +1,6 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
+const { townServerBroadcast } = require('../../broadcastFunctions')
 
 module.exports = async function (ws, actionData) {
 
@@ -9,13 +10,21 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
-        let earlyIdQuery = await connection.query(`SELECT townID FROM TownMembers WHERE UserID = ${UserID}`)
-        if (earlyIdQuery.recordset.length === 0) {
+        let preRequest = new sql.Request(connection)
+        preRequest.multiple = true;
+        preRequest.input('UserID', sql.Int, UserID)
+
+        let preData = await preRequest.query(`
+            SELECT Username FROM Logins WHERE UserID = @UserID
+            SELECT townID FROM TownMembers WHERE UserID = @UserID
+        `)
+        if (preData.recordsets[1].length === 0) {
             return {
                 message: "Not in a town"
             }
         }
-        let earlyTownID = earlyIdQuery.recordset[0].townID;
+        let earlyTownID = preData.recordsets[1][0].townID;
+        let username = preData.recordsets[0][0].Username
 
         transaction = new sql.Transaction(connection);
         await transaction.begin()
@@ -68,6 +77,7 @@ module.exports = async function (ws, actionData) {
             WHERE UserID = @UserID
         `)
         await transaction.commit();
+        townServerBroadcast(myTownID, `${username} has left the town.`)
 
         if (myRoleID === 4 && numMembers === 0) {
             // They are the last person. Delete the town (outside transaction)

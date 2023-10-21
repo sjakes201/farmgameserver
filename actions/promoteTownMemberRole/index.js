@@ -1,5 +1,6 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
+const { townServerBroadcast } = require('../../broadcastFunctions')
 
 module.exports = async function (ws, actionData) {
     // Currently only promotes to leader as there are no intermediary roles
@@ -58,6 +59,7 @@ module.exports = async function (ws, actionData) {
                 UPDATE TownMembers SET RoleID = 3 WHERE UserID = @UserID
             `)
             await transaction.commit();
+            townServerBroadcast(targetInfo.townID, `${targetUser} has been promoted to leader!`)
             return {
                 message: "SUCCESS, leader transferred"
             }
@@ -67,6 +69,8 @@ module.exports = async function (ws, actionData) {
                 UPDATE TownMembers SET RoleID = RoleID + 1 WHERE UserID = @targetID
             `)
             await transaction.commit();
+            const roles = ["member", "elder", "co-leader", "leader"];
+            townServerBroadcast(targetInfo.townID, `${targetUser} has been promoted to ${roles[targetInfo.RoleID]}!`)
             return {
                 message: "SUCCESS, promoted"
             }
