@@ -6,6 +6,7 @@ const { setupExpressServer } = require('./expressServer');
 const { setupWebSocket } = require('./webSocketHandler');
 const { scheduleTasks } = require('./cronJobs');
 const { setWebSocket } = require('./webSocketInstance');
+const mainBot = require('./discordBot/mainBot')
 
 const { app, server } = setupExpressServer();
 

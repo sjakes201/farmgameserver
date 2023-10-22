@@ -34,16 +34,21 @@ module.exports = async function (ws, actionData) {
             UPDATE Logins SET LastSeen = ${Date.now()} WHERE UserID = @UserID
             SELECT Username FROM Logins WHERE UserID = @UserID;
             SELECT * FROM AnimalManagement WHERE UserID = @UserID;
-            SELECT Balance, XP, receivedPokes FROM Profiles WHERE UserID = @UserID;
+            SELECT Balance, XP, receivedPokes, totalContributedTownXP FROM Profiles WHERE UserID = @UserID;
+            SELECT townName FROM Towns WHERE townID = (SELECT townID FROM TownMembers WHERE UserID = @UserID)
             SELECT * FROM Upgrades WHERE UserID = @UserID;
             SELECT * FROM LeaderboardSum WHERE UserID = @UserID
+
             `);
         } else {
             allInfo = await request.query(`
             SELECT Username FROM Logins WHERE UserID = @targetUserID;
-            SELECT Balance, XP, receivedPokes FROM Profiles WHERE UserID = @targetUserID;
+            SELECT Balance, XP, receivedPokes, totalContributedTownXP FROM Profiles WHERE UserID = @targetUserID;
             SELECT lastPoke FROM Profiles WHERE UserID = @UserID
+            SELECT townName FROM Towns WHERE townID = (SELECT townID FROM TownMembers WHERE UserID = @targetUserID)
             SELECT * FROM LeaderboardSum WHERE UserID = @targetUserID
+
+            
             `);
         }
         let allProfile = {}

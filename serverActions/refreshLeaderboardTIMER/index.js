@@ -1,4 +1,4 @@
-const CONSTANTS = require('../shared/CONSTANTS');
+const CONSTANTS = require('../../actions/shared/CONSTANTS');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 

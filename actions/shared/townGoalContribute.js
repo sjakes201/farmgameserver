@@ -1,11 +1,33 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('./TOWNINFO');
-const CONSTANTS = require ('./CONSTANTS')
+const CONSTANTS = require('./CONSTANTS')
 const { calcTownLevel, calcPerkLevels } = require("./townHelpers.js")
 const { townServerBroadcast } = require('../../broadcastFunctions')
 
-
+/**
+ * 
+ * @param {Object} connection - Live msqql database connection
+ * @param {number} UserID - Int UserID of xp receiving user
+ * @param {number} countContributed - Int amount of crop contributed
+ * @param {number} totalNeeded - Int total amount of crop needed
+ * @param {number} totalTownXP - Int townXP the town gets for this goal
+ */
+const giveUserTownXP = async (connection, UserID, countContributed, totalNeeded, totalTownXP) => {
+    try {
+        const userPercent = countContributed / totalNeeded;
+        const userTownXP = totalTownXP * userPercent;
+        if (typeof userTownXP !== 'number' || isNaN(userTownXP)) {
+            throw new Error('userTownXP must be a valid number');
+        }
+        await connection.query(`
+            UPDATE Profiles SET totalContributedTownXP = totalContributedTownXP + ${userTownXP} WHERE UserID = ${UserID}
+            UPDATE TownMembers SET contributedTownXP = contributedTownXP + ${userTownXP} WHERE UserID = ${UserID}
+        `)
+    } catch (error) {
+        console.log(error)
+    }
+}
 
 module.exports = async function (UserID, contributedGood, contributedQuantity) {
 
@@ -93,9 +115,10 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                         userWhere += index === members.length - 1 ? `${e.UserID})` : `${e.UserID}, `
                     })
                     // Set new goal and reset progress for that goal slot to 0 for everyone
-                    await requestTran.query(`
+                    let contributionsResult = await requestTran.query(`
                     UPDATE TownContributions SET unclaimed_${goalNum} = '${goalGood} ${quantityNeeded}' WHERE unclaimed_${goalNum} IS NULL AND UserID IN ${userWhere}
-                    UPDATE TownContributions SET progress_${goalNum} = 0 WHERE UserID in ${userWhere}
+                    SELECT progress_${goalNum}, UserID FROM TownContributions WHERE UserID IN ${userWhere}
+                    UPDATE TownContributions SET progress_${goalNum} = 0 WHERE UserID IN ${userWhere}
                     `)
                     await transaction.commit();
                     townServerBroadcast(townID, `Town has completed goal ${CONSTANTS.InventoryDescriptions[goalGood][0]} ${parseInt(quantityNeeded).toLocaleString()}!`)
@@ -109,6 +132,17 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                         UPDATE Towns SET townXP = townXP + @earnedXP WHERE townID = @townID
                         SELECT * FROM Towns WHERE townID = @townID
                     `)
+
+                    // Give each user credit for their fraction of the contribution
+                    let xpPromises = contributionsResult.recordset.map((user) => {
+                        if (user[`progress_${goalNum}`] + contributedQuantity > 0) {
+                            return giveUserTownXP(connection, user.UserID, user[`progress_${goalNum}`] + contributedQuantity, quantityNeeded, earnedXP);
+                        }
+                        return Promise.resolve(); // If no XP to give, resolve immediately
+                    });
+                    // Ensure main code does not terminate before done
+                    await Promise.all(xpPromises);
+
                     let townLevel = calcTownLevel(townXP.recordset[0].townXP);
                     let perkLevels = calcPerkLevels(townLevel);
                     let levelledUp = false;
@@ -133,7 +167,7 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                         UPDATE Towns SET animalPerkLevel = ${perkLevels.animalPerk} WHERE townID = @townID`)
                         levelledUp = true;
                     }
-                    if(levelledUp) {
+                    if (levelledUp) {
                         townServerBroadcast(townID, `Town has levelled up!`)
                     }
                 } else {

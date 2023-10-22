@@ -1,13 +1,13 @@
-const decreaseHappinessTimer = require('./actions/decreaseHappinessTIMER/index')
-const refreshLeaderboardTIMER = require('./actions/refreshLeaderboardTIMER/index')
-const updateMarketPricesTIMER = require('./actions/updateMarketPricesTIMER/index')
-const clearTempLeaderboardTIMER = require('./actions/clearTempLeaderboardTIMER/index')
+const decreaseHappinessTimer = require('./serverActions/decreaseHappinessTIMER/index')
+const refreshLeaderboardTIMER = require('./serverActions/refreshLeaderboardTIMER/index')
+const updateMarketPricesTIMER = require('./serverActions/updateMarketPricesTIMER/index')
+const clearTempLeaderboardTIMER = require('./serverActions/clearTempLeaderboardTIMER/index')
+const transferInactiveLeaders = require('./serverActions/transferInactiveLeaders/index');
 
 const cron = require('node-cron');
 
 // Schedule tasks
 const scheduleTasks = () => {
-
     // Run clear temp leaderboard midnight Sunday
     cron.schedule('59 23 * * SUN', async () => {
         try {
@@ -15,6 +15,16 @@ const scheduleTasks = () => {
             console.log('Successfully ran clearTempLeaderboardTIMER');
         } catch (error) {
             console.log('Error running clearTempLeaderboardTIMER:', error);
+        }
+    });
+
+    // Run transfer inactive leaders every 24 hours
+    cron.schedule('0 0 * * *', async () => {
+        try {
+            await transferInactiveLeaders();
+            console.log('Successfully ran transferInactiveLeaders');
+        } catch (error) {
+            console.log('Error running transferInactiveLeaders:', error);
         }
     });
 

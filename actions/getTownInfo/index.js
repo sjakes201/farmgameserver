@@ -67,7 +67,7 @@ module.exports = async function (ws, actionData) {
         let membersInfoQuery = await request.query(`
         SELECT UserID, Username, LastSeen FROM Logins ${userWhereQuery}
         SELECT UserID, XP FROM Profiles ${userWhereQuery}
-        SELECT RoleID, UserID FROM TownMembers ${userWhereQuery}
+        SELECT RoleID, contributedTownXP, UserID FROM TownMembers ${userWhereQuery}
         SELECT UserID, progress_1, progress_2, progress_3, progress_4, progress_5, progress_6, progress_7, progress_8 FROM TownContributions ${userWhereQuery}
         SELECT unclaimed_1, unclaimed_2, unclaimed_3, unclaimed_4, unclaimed_5, unclaimed_6, unclaimed_7, unclaimed_8 FROM TownContributions WHERE UserID = @UserID
         `);
@@ -78,6 +78,7 @@ module.exports = async function (ws, actionData) {
             let targetPlayerGoals = membersInfoQuery.recordsets[3].filter((p) => p.UserID === member.UserID)[0];
             let targetPlayerInfo = membersInfoQuery.recordsets[1].filter((p) => p.UserID === member.UserID)[0];
             let roleID = membersInfoQuery.recordsets[2].filter((p) => p.UserID === member.UserID)[0].RoleID;
+            let contributedTownXP = membersInfoQuery.recordsets[2].filter((p) => p.UserID === member.UserID)[0].contributedTownXP;
             let playerContributions = {};
             goalsData.forEach((goalObj, index) => {
                 if (goalObj.good in playerContributions) {
@@ -108,6 +109,7 @@ module.exports = async function (ws, actionData) {
             // Only provide contributions if they are in the town
             if (myRoleID) {
                 playerData.contributions = playerContributions;
+                playerData.contributedTownXP = contributedTownXP;
                 // playerData.reportedTimePassed = reportedTimePassed;
             }
             playersData.push(playerData)
