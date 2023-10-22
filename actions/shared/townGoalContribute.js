@@ -135,8 +135,14 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
 
                     // Give each user credit for their fraction of the contribution
                     let xpPromises = contributionsResult.recordset.map((user) => {
-                        if (user[`progress_${goalNum}`] + contributedQuantity > 0) {
-                            return giveUserTownXP(connection, user.UserID, user[`progress_${goalNum}`] + contributedQuantity, quantityNeeded, earnedXP);
+                        if (user.UserID === UserID) {
+                            if (user[`progress_${goalNum}`] + contributedQuantity > 0) {
+                                return giveUserTownXP(connection, user.UserID, user[`progress_${goalNum}`] + contributedQuantity, quantityNeeded, earnedXP);
+                            }
+                        } else {
+                            if (user[`progress_${goalNum}`] > 0) {
+                                return giveUserTownXP(connection, user.UserID, user[`progress_${goalNum}`], quantityNeeded, earnedXP);
+                            }
                         }
                         return Promise.resolve(); // If no XP to give, resolve immediately
                     });
