@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { broadcastToTown } = require('./broadcastFunctions')
+const { giveUnlockID } = require('./unlockFunctions')
 
 const actionsPath = path.join(__dirname, './actions');
 const actions = {};
@@ -15,6 +16,19 @@ fs.readdirSync(actionsPath).forEach(dir => {
     }
 });
 
+/* Helper function for giving sleepy unlock profile pic if playing between midnight and 6 am */
+const playingLate = (UserID, offset) => {
+    try {
+        const nowUTC = new Date();
+        // Convert time offset to milliseconds and subtract it from UTC time
+        const userLocalTime = new Date(nowUTC - offset * 60000);
+        if (userLocalTime.getUTCHours() >= 0 && userLocalTime.getUTCHours() < 6) {
+            giveUnlockID(UserID, 10)
+        }
+    } catch (error) {
+        console.log(error)
+    }
+}
 
 const handleAction = async (ws, action, params) => {
     try {
@@ -29,6 +43,7 @@ const handleAction = async (ws, action, params) => {
                 break;
             case 'profileInfo':
                 let profData = await actions.profileInfo(ws, params);
+                playingLate(ws.UserID, params?.oStamp);
                 ws.send(JSON.stringify({ action: 'profileInfo', body: profData }));
                 break;
             case 'marketSell':
@@ -240,6 +255,14 @@ const handleAction = async (ws, action, params) => {
             case 'readTownMessage':
                 let rtmData = await actions.readTownMessage(ws, params)
                 ws.send(JSON.stringify({ action: 'readTownMessage', body: rtmData }));
+                break;
+            case 'getUnlockedPfp':
+                let ulPfpData = await actions.getUnlockedPfp(ws, params)
+                ws.send(JSON.stringify({ action: 'getUnlockedPfp', body: ulPfpData }));
+                break;
+            case 'setProfilePic':
+                let setPfpData = await actions.setProfilePic(ws, params)
+                ws.send(JSON.stringify({ action: 'setProfilePic', body: setPfpData }));
                 break;
 
         }

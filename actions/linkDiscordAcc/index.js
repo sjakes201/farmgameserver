@@ -2,6 +2,7 @@ const axios = require('axios');
 const qs = require("qs");
 const { poolPromise } = require('../../db');
 const sql = require('mssql');
+const { giveUnlockID } = require('../../unlockFunctions');
 
 
 module.exports = async function (ws, actionData) {
@@ -43,12 +44,17 @@ module.exports = async function (ws, actionData) {
         request.input("discordID", sql.VarChar(64), discordID);
 
         let alreadyExists = await request.query(`SELECT DiscordID FROM DiscordData WHERE UserID = @UserID`)
-        if(alreadyExists.recordset.length === 0) {
+        if (alreadyExists.recordset.length === 0) {
             let linkQuery = await request.query(`INSERT INTO DiscordData (UserID, DiscordID) VALUES (@UserID, @discordID)`)
         } else {
             let linkQuery = await request.query(`UPDATE DiscordData SET DiscordID = @discordID WHERE UserID = @UserID`)
         }
         await transaction.commit();
+        giveUnlockID(UserID, 11)
+
+        return {
+            message: "success"
+        }
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback();
@@ -57,7 +63,5 @@ module.exports = async function (ws, actionData) {
         }
     }
 
-    return {
-        message: "success"
-    }
+
 }

@@ -18,7 +18,7 @@ module.exports = async function (ws, actionData) {
         UPDATE Logins SET LastSeen = ${Date.now()} WHERE UserID = @UserID
         SELECT Username FROM Logins WHERE UserID = @UserID;
         SELECT * FROM AnimalManagement WHERE UserID = @UserID;
-        SELECT Balance, XP FROM Profiles WHERE UserID = @UserID;
+        SELECT Balance, XP, profilePic FROM Profiles WHERE UserID = @UserID;
         SELECT * FROM Upgrades WHERE UserID = @UserID;
         SELECT * FROM Inventory_PRODUCE WHERE UserID = @UserID;
         SELECT * FROM LeaderboardSum WHERE UserID = @UserID

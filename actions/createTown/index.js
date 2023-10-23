@@ -1,6 +1,7 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO');
+const { giveUnlockID } = require('../../unlockFunctions')
 
 module.exports = async function (ws, actionData) {
 
@@ -43,7 +44,7 @@ module.exports = async function (ws, actionData) {
             let checkMemberQuery = await request.query(`
                 SELECT townID FROM TownMembers WHERE UserID = @UserID
             `)
-            if(checkMemberQuery.recordset.length !== 0) {
+            if (checkMemberQuery.recordset.length !== 0) {
                 await transaction.rollback();
                 return {
                     message: "Already in a town"
@@ -72,12 +73,13 @@ module.exports = async function (ws, actionData) {
             `)
 
             await transaction.commit()
+            giveUnlockID(UserID, 9)
             return { message: 'SUCCESS' }
         } catch (sqlError) {
             console.log(sqlError)
             if (sqlError.number === 2601 || sqlError.number === 2627) {
                 // Unique constraint violation error (error code 2601 or 2627)
-            if (transaction) await transaction.rollback()
+                if (transaction) await transaction.rollback()
                 return {
                     message: "Unique constraint violation. The provided townName is not unique or the leader already owns a town."
                 }

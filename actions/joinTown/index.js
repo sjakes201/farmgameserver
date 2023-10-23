@@ -2,6 +2,7 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO');
 const { townServerBroadcast } = require('../../broadcastFunctions')
+const { giveUnlockID } = require('../../unlockFunctions')
 
 module.exports = async function (ws, actionData) {
 
@@ -71,6 +72,8 @@ module.exports = async function (ws, actionData) {
 
         await transaction.commit();
         townServerBroadcast(townID, `${username} has joined the town!`)
+        giveUnlockID(UserID, 9);
+        
         return {
             message: "SUCCESS"
         }
