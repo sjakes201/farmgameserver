@@ -43,26 +43,36 @@ module.exports = async function (ws, actionData) {
 
     try {
         connection = await poolPromise;
-
+        let preRequest = new sql.Request(connection)
+        preRequest.input(`UserID`, sql.Int, UserID);
         // get unlocks info
-        let unlockedQuery = await connection.query(`SELECT XP FROM Profiles WHERE UserID = ${UserID}`)
-        let upgradesQuery = await connection.query(`SELECT exoticPermit, deluxePermit FROM Upgrades WHERE UserID = ${UserID}`)
-        let currentOrders = await connection.query(`SELECT * FROM ORDERS WHERE UserID = ${UserID}`)
-        let userQuery = await connection.query(`
-        SELECT 
-            P.townID, P.XP,
-            T.orderRefreshLevel
-        FROM 
-            Profiles P
-        INNER JOIN 
-            Towns T ON P.townID = T.townID
-        WHERE 
-            P.UserID = ${UserID};
-        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+        let upgradesQuery = await preRequest.query(`SELECT exoticPermit, deluxePermit FROM Upgrades WHERE UserID = @UserID`)
+        let currentOrders = await preRequest.query(`SELECT * FROM ORDERS WHERE UserID = @UserID`)
+
+        let userQuery = await preRequest.query(`
+            SELECT 
+                TM.townID, 
+                P.XP,
+                T.orderRefreshLevel
+            FROM 
+                TownMembers TM
+            INNER JOIN 
+                Towns T ON T.townID = TM.townID
+            INNER JOIN
+                Profiles P ON P.UserID = TM.UserID
+            WHERE 
+                TM.UserID = @UserID;
+            SELECT * 
+            FROM 
+                Upgrades 
+            WHERE 
+                UserID = @UserID;
+
         `);
+        console.log(userQuery.recordsets)
         let townPerks = userQuery.recordsets[0][0]
 
-        let XP = unlockedQuery.recordset[0].XP, exoticPermit = upgradesQuery.recordset[0].exoticPermit, deluxePermit = upgradesQuery.recordset[0].deluxePermits;
+        let XP = userQuery.recordsets[0][0].XP, exoticPermit = upgradesQuery.recordset[0].exoticPermit, deluxePermit = upgradesQuery.recordset[0].deluxePermits;
         let unlockedGoods = [];
 
         //
@@ -138,7 +148,7 @@ module.exports = async function (ws, actionData) {
                                                UPDATE Profiles SET LastOrderRefresh = ${Date.now()} WHERE UserID = @UserID`);
         let lastTime = lastRefresh.recordset[0].LastOrderRefresh;
         let timePassedMS = Date.now() - lastTime;
-        if(townPerks?.orderRefreshLevel) {
+        if (townPerks?.orderRefreshLevel) {
             let boostPercent = TOWNINFO.upgradeBoosts.orderRefreshPerkLevel[townPerks.orderRefreshLevel];
             let boostChange = 1 + boostPercent;
             timePassedMS *= boostChange;
