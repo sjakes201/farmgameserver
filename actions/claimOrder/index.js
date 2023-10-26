@@ -61,8 +61,8 @@ module.exports = async function (ws, actionData) {
         request.input('numNeeded', sql.Int, numNeeded)
 
         // calculate reward
-        const goldReward = Math.floor(CONSTANTS.Init_Market_Prices[good] * (2 / 3) * numNeeded);
-        const xpReward = Math.floor(CONSTANTS.XP[good] * (2 / 3) * numNeeded);
+        const goldReward = Math.floor(CONSTANTS.Init_Market_Prices[good] * (3/2) * numNeeded);
+        const xpReward = Math.floor(CONSTANTS.XP[good] * numNeeded);
         request.input('goldReward', sql.Int, goldReward)
         request.input('xpReward', sql.Int, xpReward)
 
