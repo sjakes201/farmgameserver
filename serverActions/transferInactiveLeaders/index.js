@@ -12,12 +12,12 @@ module.exports = async function () {
         connection = await poolPromise;
 
         // Step 1: Retrieve Inactive Leaders
-        const threeWeeksAgo = Date.now() - (3 * 7 * 24 * 60 * 60 * 1000);
+        const twoWeeksAgo = Date.now() - (2.5 * 7 * 24 * 60 * 60 * 1000);
         const inactiveLeaders = await connection.query(`
             SELECT TM.townID, TM.UserID
             FROM TownMembers TM
             INNER JOIN Logins L ON TM.UserID = L.UserID
-            WHERE TM.RoleID = 4 AND L.lastSeen < ${threeWeeksAgo}
+            WHERE TM.RoleID = 4 AND L.lastSeen < ${twoWeeksAgo}
         `);
 
         for (const row of inactiveLeaders.recordset) {
@@ -54,7 +54,7 @@ module.exports = async function () {
                     END
                 COMMIT
                 `);
-                townServerBroadcast(townID, `The town's leader has been inactive for 3 weeks and leadership has been transferred to ${newLeaderUsername}.`)
+                townServerBroadcast(townID, `The town's leader has been inactive for 2 weeks and leadership has been transferred to ${newLeaderUsername}.`)
 
             }
         }

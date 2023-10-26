@@ -29,17 +29,30 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
-        let userQuery = await connection.query(`
+        let preRequest = new sql.Request(connection)
+        preRequest.input(`UserID`, sql.Int, UserID);
+        let userQuery = await preRequest.query(`
         SELECT 
-            P.townID, P.XP,
-            T.growthPerkLevel, T.partsPerkLevel
+            TM.townID, 
+            P.XP,
+            T.growthPerkLevel, 
+            T.partsPerkLevel
         FROM 
-            Profiles P
+            TownMembers TM
         INNER JOIN 
-            Towns T ON P.townID = T.townID
+            Towns T ON T.townID = TM.townID
+        INNER JOIN
+            Profiles P ON P.UserID = TM.UserID
         WHERE 
-            P.UserID = ${UserID};
-        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+            TM.UserID = @UserID;
+
+        -- Query for upgrades associated with the user
+        SELECT * 
+        FROM 
+            Upgrades 
+        WHERE 
+            UserID = @UserID;
+
         `);
 
         let upgrades = userQuery.recordsets[1][0]
@@ -281,7 +294,7 @@ module.exports = async function (ws, actionData) {
         finalQuery += tempLeaderQuery;
         finalQuery += leaderQuery;
         await request.query(finalQuery)
-        
+
         await transaction.commit();
 
         Object.keys(cropsSum).forEach((crop) => {

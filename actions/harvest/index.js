@@ -31,19 +31,29 @@ module.exports = async function (ws, actionData) {
         };
 
         connection = await poolPromise;
+        let preRequest = new sql.Request(connection)
+        preRequest.input(`UserID`, sql.Int, UserID);
+        let userQuery = await preRequest.query(`
+            SELECT 
+                TM.townID, 
+                P.XP,
+                T.growthPerkLevel, 
+                T.partsPerkLevel
+            FROM 
+                TownMembers TM
+            INNER JOIN 
+                Towns T ON T.townID = TM.townID
+            INNER JOIN
+                Profiles P ON P.UserID = TM.UserID
+            WHERE 
+                TM.UserID = @UserID;
 
-        // Get user info before transaction
-        let userQuery = await connection.query(`
-        SELECT 
-            P.townID, 
-            T.growthPerkLevel, T.partsPerkLevel
-        FROM 
-            Profiles P
-        INNER JOIN 
-            Towns T ON P.townID = T.townID
-        WHERE 
-            P.UserID = ${UserID};
-        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+            -- Query for upgrades associated with the user
+            SELECT * 
+            FROM 
+                Upgrades 
+            WHERE 
+                UserID = @UserID;
         `);
         let upgrades = userQuery.recordsets[1][0]
         let townPerks = userQuery.recordsets[0][0]
