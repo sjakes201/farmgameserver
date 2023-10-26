@@ -22,20 +22,29 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
+        let preRequest = new sql.Request(connection)
+        preRequest.input(`UserID`, sql.Int, UserID);
+        let userQuery = await preRequest.query(`
+            SELECT 
+                TM.townID, 
+                P.XP,
+                T.growthPerkLevel, 
+                T.partsPerkLevel
+            FROM 
+                TownMembers TM
+            INNER JOIN 
+                Towns T ON T.townID = TM.townID
+            INNER JOIN
+                Profiles P ON P.UserID = TM.UserID
+            WHERE 
+                TM.UserID = @UserID;
 
-        // Query upgrades info outside transaction 
-        
-        let userQuery = await connection.query(`
-        SELECT 
-            P.townID, 
-            T.animalPerkLevel
-        FROM 
-            Profiles P
-        INNER JOIN 
-            Towns T ON P.townID = T.townID
-        WHERE 
-            P.UserID = ${UserID};
-        SELECT * FROM Upgrades WHERE UserID = ${UserID}
+            -- Query for upgrades associated with the user
+            SELECT * 
+            FROM 
+                Upgrades 
+            WHERE 
+                UserID = @UserID;
         `);
         let upgrades = userQuery.recordsets[1][0]
         let townPerks = userQuery.recordsets[0][0]
@@ -90,7 +99,7 @@ module.exports = async function (ws, actionData) {
         let last_produce = animalInfo.recordset[0].Last_produce;
         let timeNeeded = UPGRADES[collectTableName][animalInfo.recordset[0].Animal_type][0]
 
-        if(townPerks?.animalPerkLevel) {
+        if (townPerks?.animalPerkLevel) {
             let boostPercent = TOWNINFO.upgradeBoosts.animalPerkLevel[townPerks.animalPerkLevel];
             let boostChange = 1 - boostPercent;
             timeNeeded *= boostChange;
