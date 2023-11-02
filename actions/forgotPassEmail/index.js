@@ -40,14 +40,14 @@ module.exports = async function (ws, actionData) {
         if (result.rowsAffected[0] === 0) {
             throw "EMAIL NOT ASSOCIATED WITH AN ACCOUNT"
         } else {
-            let resetLinkWithParams = `https://mango-ground-0a52e740f.3.azurestaticapps.net/passwordReset?email=${email}&code=${resetCode}`
+            let resetLinkWithParams = `https://farmgame.live/passwordReset?email=${email}&code=${resetCode}`
             sgMail.setApiKey(process.env.SENDGRID_API_KEY)
             const msg = {
                 to: email,
                 from: 'livefarmgame.service@gmail.com',
                 subject: 'Farmgame password reset',
-                text: `Hello,\nRequested password reset link: \n${resetLinkWithParams}\nIf you did not request a password reset, you can safely ignore this email.`,
-                html: `Hello,<br>Requested password reset link:<br>${resetLinkWithParams}<br>If you did not request a password reset, you can safely ignore this email.`,
+                text: `Hello,\n\nRequested password reset link: \n${resetLinkWithParams}\nIf you did not request a password reset, you can safely ignore this email.`,
+                html: `Hello,<br><br>Requested password reset link:<br>${resetLinkWithParams}<br>If you did not request a password reset, you can safely ignore this email.`,
             };
 
             sgMail

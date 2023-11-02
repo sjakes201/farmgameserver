@@ -66,6 +66,7 @@ module.exports = async function (ws, actionData) {
         let typeID = MACHINESINFO.machineTypeIDS[type];
         request.input('typeID', sql.Int, typeID)
         request.input('newTier', sql.Int, tier)
+
         let curSlotQuery = await request.query(`
             SELECT Slot${slot}, Slot${slot}Level FROM Machines WHERE UserID = @UserID
             UPDATE Machines SET Slot${slot} = @typeID, Slot${slot}Level = @newTier WHERE UserID = @UserID
@@ -102,7 +103,6 @@ module.exports = async function (ws, actionData) {
             UPDATE Inventory_PARTS SET Gears = Gears - @gearsCost, MetalSheets = MetalSheets - @sheetsCost, Bolts = Bolts - @boltsCost WHERE UserID = @UserID
             SELECT Gears, MetalSheets, Bolts FROM Inventory_PARTS WHERE UserID = @UserID
         `)
-
         if (partsQuery.recordset[0].Gears < 0 || partsQuery.recordset[0].MetalSheets < 0 || partsQuery.recordset[0].Bolts < 0) {
             await transaction.rollback();
             return {
@@ -114,10 +114,10 @@ module.exports = async function (ws, actionData) {
             message: "SUCCESS"
         }
     } catch (error) {
-        if (transaction) await transaction.rollback()
         console.log(error);
+        if (transaction) await transaction.rollback()
         return {
             message: 'UNCAUGHT ERROR IN /buyMachine endpoint'
         };
-    } 
+    }
 }

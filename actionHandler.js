@@ -264,6 +264,27 @@ const handleAction = async (ws, action, params) => {
                 let setPfpData = await actions.setProfilePic(ws, params)
                 ws.send(JSON.stringify({ action: 'setProfilePic', body: setPfpData }));
                 break;
+            case 'getFriendsData':
+                let friendsData = await actions.getFriendsData(ws, params)
+                ws.send(JSON.stringify({ action: 'getFriendsData', body: friendsData }));
+                break;
+            case 'sendFriendRequest':
+                let sfrData = await actions.sendFriendRequest(ws, params)
+                ws.send(JSON.stringify({ action: 'sendFriendRequest', body: sfrData }));
+                break;
+            case 'acceptFriendRequest':
+                let afrData = await actions.acceptFriendRequest(ws, params)
+                ws.send(JSON.stringify({ action: 'acceptFriendRequest', body: afrData }));
+                break;
+            case 'removeFriend':
+                let remFrData = await actions.removeFriend(ws, params)
+                ws.send(JSON.stringify({ action: 'removeFriend', body: remFrData }));
+                break;
+            case 'feedFriendAnimal':
+                let feedFrData = await actions.feedFriendAnimal(ws, params)
+                ws.send(JSON.stringify({ action: 'feedFriendAnimal', body: feedFrData }));
+                break;
+
 
         }
     } catch (error) {

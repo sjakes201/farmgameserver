@@ -19,7 +19,7 @@ module.exports = async function (ws, actionData) {
         let targetQuery = await request.query(`
         SELECT UserID FROM Logins WHERE Username = @targetUser
         `)
-        if(targetQuery.recordset.length === 0) {
+        if (targetQuery.recordset.length === 0) {
             return {
                 message: "User does not exist"
             }
@@ -38,16 +38,38 @@ module.exports = async function (ws, actionData) {
             SELECT townName FROM Towns WHERE townID = (SELECT townID FROM TownMembers WHERE UserID = @UserID)
             SELECT * FROM Upgrades WHERE UserID = @UserID;
             SELECT * FROM LeaderboardSum WHERE UserID = @UserID
-
             `);
         } else {
             allInfo = await request.query(`
             SELECT Username FROM Logins WHERE UserID = @targetUserID;
             SELECT Balance, XP, receivedPokes, totalContributedTownXP,profilePic FROM Profiles WHERE UserID = @targetUserID;
-            SELECT lastPoke FROM Profiles WHERE UserID = @UserID
-            SELECT townName FROM Towns WHERE townID = (SELECT townID FROM TownMembers WHERE UserID = @targetUserID)
-            SELECT * FROM LeaderboardSum WHERE UserID = @targetUserID
+            SELECT lastPoke FROM Profiles WHERE UserID = @UserID;
+            SELECT townName FROM Towns WHERE townID = (SELECT townID FROM TownMembers WHERE UserID = @targetUserID);
+            SELECT * FROM LeaderboardSum WHERE UserID = @targetUserID;
 
+            WITH UserRelationship AS (
+                SELECT
+                    F.senderUserID,
+                    F.receiverUserID,
+                    F.acceptedFlag
+                FROM
+                    Friends F
+                WHERE
+                    (F.senderUserID = @UserID AND F.receiverUserID = @targetUserID) OR
+                    (F.senderUserID = @targetUserID AND F.receiverUserID = @UserID)
+            )
+            SELECT 
+                CASE
+                    WHEN (UR.senderUserID = @UserID AND UR.acceptedFlag = 0) THEN 'pending_sent'
+                    WHEN (UR.receiverUserID = @UserID AND UR.acceptedFlag = 0) THEN 'pending_received'
+                    WHEN (UR.acceptedFlag = 1) THEN 'friends'
+                    WHEN (UR.acceptedFlag = 2) THEN 'not_friends'
+                    WHEN UR.senderUserID IS NULL AND UR.receiverUserID IS NULL THEN 'not_friends'
+                END AS friendStatus
+            FROM 
+                (VALUES (@UserID, @targetUserID)) AS U(UserID, TargetUserID)
+            LEFT JOIN 
+                UserRelationship UR ON U.UserID = UR.senderUserID OR U.UserID = UR.receiverUserID;
             
             `);
         }
@@ -58,10 +80,11 @@ module.exports = async function (ws, actionData) {
                 ...recordset[0]
             }
         })
+
         delete allProfile.UserID
-        if(targetUserID === UserID) {
+        if (targetUserID === UserID) {
             allProfile.isMe = true;
-        } 
+        }
         allProfile.username = targetUser;
 
         if (allInfo.recordset.length === 0) {

@@ -45,9 +45,26 @@ const townServerBroadcast = async (townID, messageContent) => {
                 SELECT ID AS insertedMessageID FROM @InsertedIDs
             `)
         broadcastToTown(townID, messageContent, 'Server', createBroadcast.recordset[0].insertedMessageID)
-    } catch(error) {
+    } catch (error) {
         console.log(error)
     }
 }
 
-module.exports = { broadcastToTown, townServerBroadcast };
+const sendUserData = async (UserID, dataType, data) => {
+    const wss = getWebSocket();
+    try {
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN && client.UserID === UserID) {
+                client.send(JSON.stringify({
+                    type: 'data_update',
+                    dataType: dataType,
+                    data: data
+                }))
+            }
+        });
+    } catch (error) {
+        console.log(`ERROR sending user data`, error)
+    }
+}
+
+module.exports = { broadcastToTown, townServerBroadcast, sendUserData };
