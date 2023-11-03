@@ -3,12 +3,13 @@ const refreshLeaderboardTIMER = require('./serverActions/refreshLeaderboardTIMER
 const updateMarketPricesTIMER = require('./serverActions/updateMarketPricesTIMER/index')
 const clearTempLeaderboardTIMER = require('./serverActions/clearTempLeaderboardTIMER/index')
 const transferInactiveLeaders = require('./serverActions/transferInactiveLeaders/index');
+const updateMarketMultipliers = require('./serverActions/updateMarketMultipliers/index')
 
 const cron = require('node-cron');
 
 // Schedule tasks
 const scheduleTasks = () => {
-    
+
     // Run clear temp leaderboard midnight Sunday
     cron.schedule('59 23 * * SUN', async () => {
         try {
@@ -16,6 +17,16 @@ const scheduleTasks = () => {
             console.log('Successfully ran clearTempLeaderboardTIMER');
         } catch (error) {
             console.log('Error running clearTempLeaderboardTIMER:', error);
+        }
+    });
+
+    // Run market multipliers randomizer every 12 hours
+    cron.schedule('0 0,12 * * *', async () => {
+        try {
+            await updateMarketMultipliers();
+            console.log('Successfully ran updateMarketMultipliers');
+        } catch (error) {
+            console.log('Error running updateMarketMultipliers:', error);
         }
     });
 

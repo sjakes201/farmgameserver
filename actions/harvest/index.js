@@ -34,6 +34,7 @@ module.exports = async function (ws, actionData) {
         let preRequest = new sql.Request(connection)
         preRequest.input(`UserID`, sql.Int, UserID);
         let userQuery = await preRequest.query(`
+            UPDATE Logins SET LastSeen = ${Date.now()} WHERE UserID = @UserID
             SELECT 
                 TM.townID, 
                 P.XP,

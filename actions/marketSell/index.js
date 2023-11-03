@@ -22,8 +22,20 @@ module.exports = async function (ws, actionData) {
     try {
         connection = await poolPromise;
         // Get price, does not need to be in transaction
-        let price_result = await connection.query(`SELECT ${item} FROM MARKET WHERE info = 'CUR_PRICE'`);
-        let revenue = price_result.recordset[0][item] * parseInt(count);
+        let priceResult = await connection.query(`
+        UPDATE Logins SET LastSeen = ${Date.now()} WHERE UserID = ${UserID}
+        SELECT ${item}
+        FROM MARKET 
+        WHERE info = 'CUR_PRICE' OR info = 'PRICE_MULTIPLIER'
+        ORDER BY CASE info 
+                WHEN 'CUR_PRICE' THEN 1
+                WHEN 'PRICE_MULTIPLIER' THEN 2
+                END;
+        `);
+
+        const marketPrice = priceResult.recordset[0][item]
+        const multiplier = priceResult.recordset[1][item]
+        let revenue = marketPrice * multiplier;
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
@@ -31,7 +43,7 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID)
 
         // Increase Balance in Profiles (SQL +Profiles)
-        request.input('revenue', sql.Decimal(18,2), revenue);
+        request.input('revenue', sql.Decimal(18, 2), revenue);
         await request.query(`UPDATE Profiles SET Balance = Balance + @revenue WHERE UserID = @UserID`);
 
 
