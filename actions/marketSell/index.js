@@ -36,6 +36,7 @@ module.exports = async function (ws, actionData) {
         const marketPrice = priceResult.recordset[0][item]
         const multiplier = priceResult.recordset[1][item]
         let revenue = marketPrice * multiplier;
+        revenue *= count;
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
