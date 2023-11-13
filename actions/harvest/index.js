@@ -5,7 +5,7 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const townGoalContribute = require(`../shared/townGoalContribute`);
 const TOWNINFO = require('../shared/TOWNINFO');
-
+const TOWNSHOP = require('../shared/TOWNSHOP')
 
 module.exports = async function (ws, actionData) {
     // GET USERID
@@ -37,15 +37,12 @@ module.exports = async function (ws, actionData) {
             UPDATE Logins SET LastSeen = ${Date.now()} WHERE UserID = @UserID
             SELECT 
                 TM.townID, 
-                P.XP,
-                T.growthPerkLevel, 
-                T.partsPerkLevel
+                TP.cropTimeLevel, 
+                TP.partsChanceLevel
             FROM 
                 TownMembers TM
             INNER JOIN 
-                Towns T ON T.townID = TM.townID
-            INNER JOIN
-                Profiles P ON P.UserID = TM.UserID
+                TownPurchases TP ON TP.townID = TM.townID
             WHERE 
                 TM.UserID = @UserID;
 
@@ -56,8 +53,9 @@ module.exports = async function (ws, actionData) {
             WHERE 
                 UserID = @UserID;
         `);
-        let upgrades = userQuery.recordsets[1][0]
+
         let townPerks = userQuery.recordsets[0][0]
+        let upgrades = userQuery.recordsets[1][0]
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
@@ -93,8 +91,8 @@ module.exports = async function (ws, actionData) {
         let cropID = tilecontents.recordset[0].CropID;
         let secsNeeded = (UPGRADES[growthTableName][CONSTANTS.ProduceNameFromID[cropID]]).reduce((prev, sum) => sum + prev);
         // Reduce secsNeeded based on town's growthPerkLevel
-        if (townPerks?.growthPerkLevel) {
-            let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+        if (townPerks?.cropTimeLevel > 0) {
+            let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
             let boostChange = 1 - boostPercent;
             secsNeeded *= boostChange;
         }
@@ -170,8 +168,8 @@ module.exports = async function (ws, actionData) {
                     // active time fertilizer that has not expired
                     timeSkip /= 2;
                 }
-                if (townPerks?.growthPerkLevel) {
-                    let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+                if (townPerks?.cropTimeLevel > 0) {
+                    let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
                     let boostChange = 1 - boostPercent;
                     timeSkip *= boostChange;
                 }

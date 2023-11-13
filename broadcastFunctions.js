@@ -67,4 +67,25 @@ const sendUserData = async (UserID, dataType, data) => {
     }
 }
 
-module.exports = { broadcastToTown, townServerBroadcast, sendUserData };
+const sendTownUsersData = async (townID, dataType, data) => {
+    const wss = getWebSocket();
+    try {
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN && client.UserID === UserID) {
+                let clientTownID = client?.townID;
+                if (clientTownID === townID) {
+                    client.send(JSON.stringify({
+                        type: 'data_update',
+                        dataType: dataType,
+                        data: data
+                    }))
+                }
+            }
+        })
+    } catch (error) {
+        console.log(`ERROR sending town users data`, error)
+    }
+
+}
+
+module.exports = { broadcastToTown, townServerBroadcast, sendUserData, sendTownUsersData };

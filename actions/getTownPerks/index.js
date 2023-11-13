@@ -14,11 +14,13 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID);
         let allInfo = await request.query(`
         SELECT 
-            T.townName, T.growthPerkLevel, T.partsPerkLevel, T.orderRefreshLevel, T.animalPerkLevel
+            T.townName, TP.cropTimeLevel, TP.animalTimeLevel, TP.partsChanceLevel, TP.orderRefreshLevel, TP.happinessMultiplierLevel
         FROM 
             TownMembers TM
         INNER JOIN 
-            Towns T ON TM.townID = T.townID
+            TownPurchases TP ON TM.townID = TP.townID
+        INNER JOIN 
+            Towns T on TM.townID = T.townID
         WHERE 
             TM.UserID = @UserID;
         `);

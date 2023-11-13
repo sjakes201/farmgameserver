@@ -65,7 +65,6 @@ const scheduleTasks = () => {
         if (process.env.RUN_LEADERBOARD_REFRESH === "true") {
             try {
                 leaderboardCycle = (leaderboardCycle % 4) + 1;
-
                 await refreshLeaderboardTIMER(leaderboardCycle);
                 console.log(`Successfully ran refreshLeaderboardTIMER cycle ${leaderboardCycle}`);
             } catch (error) {

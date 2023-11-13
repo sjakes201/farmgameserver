@@ -284,6 +284,18 @@ const handleAction = async (ws, action, params) => {
                 let feedFrData = await actions.feedFriendAnimal(ws, params)
                 ws.send(JSON.stringify({ action: 'feedFriendAnimal', body: feedFrData }));
                 break;
+            case 'buyTownPerk':
+                let btpData = await actions.buyTownPerk(ws, params)
+                ws.send(JSON.stringify({ action: 'buyTownPerk', body: btpData }));
+                break;
+            case 'chooseIndivTownGoal':
+                let itgData = await actions.chooseIndivTownGoal(ws, params)
+                ws.send(JSON.stringify({ action: 'chooseIndivTownGoal', body: itgData }));
+                break;
+            case 'getNotifications':
+                let ntfData = await actions.getNotifications(ws, params)
+                ws.send(JSON.stringify({ action: 'getNotifications', body: ntfData }));
+                break;
 
 
         }

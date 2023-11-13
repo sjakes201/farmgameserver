@@ -3,6 +3,7 @@ const UPGRADES = require('../shared/UPGRADES');
 const CROPINFO = require('../shared/CROPINFO')
 const MACHINESINFO = require('../shared/MACHINESINFO')
 const TOWNINFO = require('../shared/TOWNINFO')
+const TOWNSHOP = require('../shared/TOWNSHOP')
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 
@@ -35,15 +36,12 @@ module.exports = async function (ws, actionData) {
         UPDATE Logins SET LastSeen = ${Date.now()} WHERE UserID = @UserID
         SELECT 
             TM.townID, 
-            P.XP,
-            T.growthPerkLevel, 
-            T.partsPerkLevel
+            TP.cropTimeLevel, 
+            TP.partsChanceLevel
         FROM 
             TownMembers TM
         INNER JOIN 
-            Towns T ON T.townID = TM.townID
-        INNER JOIN
-            Profiles P ON P.UserID = TM.UserID
+            TownPurchases TP ON TP.townID = TM.townID
         WHERE 
             TM.UserID = @UserID;
 
@@ -56,8 +54,8 @@ module.exports = async function (ws, actionData) {
 
         `);
 
-        let upgrades = userQuery.recordsets[1][0]
         let townPerks = userQuery.recordsets[0][0]
+        let upgrades = userQuery.recordsets[1][0]
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
@@ -125,8 +123,8 @@ module.exports = async function (ws, actionData) {
                 }
                 timeFertRemainingSecs = (CONSTANTS.VALUES.TimeFeritilizeDuration - (curTime - fertilizedTime)) / 1000
             }
-            if (townPerks?.growthPerkLevel) {
-                let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+            if (townPerks?.cropTimeLevel > 0) {
+                let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
                 let boostChange = 1 - boostPercent;
                 secsNeeded *= boostChange;
             }
@@ -180,8 +178,8 @@ module.exports = async function (ws, actionData) {
                         timeSkip /= 2;
                     }
 
-                    if (townPerks?.growthPerkLevel) {
-                        let boostPercent = TOWNINFO.upgradeBoosts.growthPerkLevel[townPerks.growthPerkLevel];
+                    if (townPerks?.cropTimeLevel > 0) {
+                        let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
                         let boostChange = 1 - boostPercent;
                         timeSkip *= boostChange;
                     }
@@ -235,11 +233,13 @@ module.exports = async function (ws, actionData) {
                     // missing in config
                     chance = 0.01;
                 }
-                if (townPerks?.partsPerkLevel) {
-                    let boostPercent = TOWNINFO.upgradeBoosts.partsPerkLevel[townPerks.partsPerkLevel];
+
+                if (townPerks?.partsChanceLevel > 0) {
+                    let boostPercent = TOWNSHOP.perkBoosts.partsChanceLevel[townPerks.partsChanceLevel - 1];
                     let boostChange = 1 + boostPercent;
                     chance *= boostChange;
                 }
+
                 let randomPart = null;
                 if (randChance <= chance) {
                     // get a random machine part
