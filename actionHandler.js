@@ -296,8 +296,10 @@ const handleAction = async (ws, action, params) => {
                 let ntfData = await actions.getNotifications(ws, params)
                 ws.send(JSON.stringify({ action: 'getNotifications', body: ntfData }));
                 break;
-
-
+            case 'acceptNotification':
+                let antfData = await actions.acceptNotification(ws, params)
+                ws.send(JSON.stringify({ action: 'acceptNotification', body: antfData }));
+                break;
         }
     } catch (error) {
         console.log(error)

@@ -3,18 +3,24 @@ const { poolPromise } = require('../../db');
 
 
 module.exports = async function (ws, actionData) {
-
     const UserID = ws.UserID;
 
     const notificationID = actionData.notificationID;
-    const action = actionData.action;
+    const processAction = actionData.processAction;
 
     const actionTypes = ["CLAIM"]
 
-    if(!actionTypes.includes(action)) {
+    if (!actionTypes.includes(processAction)) {
         return {
             success: false,
-            message: `Invalid action ${action}`
+            message: `Invalid action ${processAction}`
+        }
+    }
+
+    if (!Number.isInteger(notificationID) || notificationID < 0) {
+        return {
+            success: false,
+            message: "Invalid notification ID"
         }
     }
 
@@ -26,15 +32,36 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID);
         request.input('notificationID', sql.Int, notificationID)
 
-        let notificationsQuery = await request.query(`
-            SELECT Type, GoldReward FROM UserNotifications WHERE UserID = @UserID AND NotificationID = @notificationID
-        `);
+        if (processAction === "CLAIM") {
+            let notificationsQuery = await request.query(`
+                SELECT Type, GoldReward FROM UserNotifications WHERE UserID = @UserID AND NotificationID = @notificationID
+            `);
+            if (notificationsQuery.recordset.length === 0) {
+                return {
+                    success: false,
+                    message: "No notification with that ID"
+                }
+            }
+            if (notificationsQuery.recordset[0].Type === "INDIV_TOWN_GOAL_REWARD") {
+                let goldReward = notificationsQuery.recordset[0].GoldReward;
+                request.input('goldReward', sql.Int, goldReward);
 
-        console.log(notificationsQuery)
+                let settleQuery = await request.query(`
+                    UPDATE Profiles SET Balance = Balance + @goldReward WHERE UserID = @UserID
+                    DELETE FROM UserNotifications WHERE UserID = @UserID AND NotificationID = @notificationID
+                `)
+
+                return {
+                    success: true,
+                    goldReward: goldReward
+                }
+            }
+
+        }
 
         return {
-            success: true,
-            
+            success: false,
+            message: 'No valid notification of this type found'
         }
 
     } catch (error) {
