@@ -2,7 +2,7 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('./TOWNINFO');
 const CONSTANTS = require('./CONSTANTS')
-const { calcTownLevel, calcPerkLevels } = require("./townHelpers.js")
+const { calcIndivRewards, newIndividualGoal } = require("./townHelpers.js")
 const { townServerBroadcast } = require('../../broadcastFunctions')
 
 /**
@@ -13,6 +13,7 @@ const { townServerBroadcast } = require('../../broadcastFunctions')
  * @param {number} totalNeeded - Int total amount of crop needed
  * @param {number} totalTownXP - Int townXP the town gets for this goal
  */
+
 const giveUserTownXP = async (connection, UserID, countContributed, totalNeeded, totalTownXP) => {
     try {
         const userPercent = countContributed / totalNeeded;
@@ -30,24 +31,6 @@ const giveUserTownXP = async (connection, UserID, countContributed, totalNeeded,
 }
 
 module.exports = async function (UserID, contributedGood, contributedQuantity) {
-
-    /*
-        1. Get townID from Profiles
-        2. get goals and progresses from TownGoals 
-        3. If any goals match good add qty to progress 
-        4a. If progress is now >= goals,
-            - From profiles get all players who have townID
-            - Call new goal function 
-            - In TownContributions set unclaimed_n to goal_n IF where UserID in (previous step data) and unclaimed_n != null
-            - reset TownContributions progress_n to 0 for all UserID in (town users)
-        4b. else Add to TownContributions progress_n
-
-        New goal function: townID
-        if it's goal [5,8] then randomize one that isn't any other goal from first part and set to goal_n where townID
-        If it's goal [1,4] then just reset goal progress
-
-        Need to add townXP (not needed in transaction)
-    */
 
     let connection;
     let transaction;
@@ -68,12 +51,72 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
         await transaction.begin()
         inTransaction = true;
         const requestTran = new sql.Request(transaction);
+        requestTran.multiple = true;
 
         requestConn.input('townID', sql.Int, townID)
+
         requestTran.input('townID', sql.Int, townID)
         requestTran.input('UserID', sql.Int, UserID)
-        // Get towngoals for town of the User (SQL +TownGoals)
-        let goalsInfoQuery = await requestTran.query(`SELECT * FROM TownGoals WHERE townID = @townID`);
+        requestTran.input('qty', sql.Int, contributedQuantity)
+        // Check individual town goals (SQL +IndividualTownGoals)
+        let indivGoals = await requestTran.query(`
+            SELECT Good, Quantity, progress, goalID FROM IndividualTownGoals WHERE UserID = @UserID
+            SELECT Good FROM IndividualTownGoals WHERE townID = @townID AND (UserID != @UserID OR UserID IS NULL)
+        `)
+        if (indivGoals.recordsets?.[0]?.[0]?.Good === contributedGood) {
+            // They have an individual goal for this good, this takes priority over town goal
+            const qtyNeeded = indivGoals.recordsets[0][0].Quantity;
+            const qtyHave = indivGoals.recordsets[0][0].progress;
+            const goalID = indivGoals.recordsets[0][0].goalID
+            if (qtyHave + contributedQuantity >= qtyNeeded) {
+                // Finished individual goal, give town xp credit to both, generate new one, put in user's notifications (SQL -IndividualTownGoals +UserNotifications)
+                // generate new goal
+                const allOtherGoals = indivGoals.recordsets[1].map((goal) => goal.Good)
+                const newGoal = newIndividualGoal(allOtherGoals)
+
+                // logging old goal in notifications to claim
+                const rewards = calcIndivRewards(contributedGood, qtyNeeded);
+                requestTran.input(`goldReward`, sql.Int, rewards.gold)
+                requestTran.input('newGood', sql.NVarChar(64), newGoal[0])
+                requestTran.input('newQty', sql.Int, newGoal[1])
+                requestTran.input('goalID', sql.Int, goalID)
+                const rewardInfo = {
+                    good: contributedGood,
+                    qty: qtyNeeded,
+                    goalID: goalID
+                }
+                requestTran.input('notificationString', sql.NVarChar(512), JSON.stringify(rewardInfo))
+                await requestTran.query(`
+                    UPDATE IndividualTownGoals SET UserID = NULL, Good = @newGood, Quantity = @newQty, progress = 0, Expiration = NULL WHERE townID = @townID AND goalID = @goalID
+                    INSERT INTO UserNotifications (UserID, Type, Message, GoldReward) VALUES (@UserID, 'INDIV_TOWN_GOAL_REWARD', @notificationString, @goldReward)
+                `)
+                await transaction.commit();
+
+                // Give town XP
+                let earnedXP = contributedGood.includes("_") ? 120 : 100;
+                requestConn.input('earnedXP', sql.Int, earnedXP)
+                await requestConn.query(`
+                    UPDATE Towns SET townXP = townXP + @earnedXP WHERE townID = @townID
+                    UPDATE TownPurchases SET townFunds = townFunds + @earnedXP WHERE townID = @townID
+                `)
+                await giveUserTownXP(connection, UserID, 1, 1, earnedXP)
+                return {
+                    success: true,
+                }
+            } else {
+                // Progressed in individual goal
+                await requestTran.query(`UPDATE IndividualTownGoals SET progress = progress + @qty WHERE UserID = @UserID`)
+                await transaction.commit();
+                return {
+                    success: true
+                }
+            }
+        }
+
+        // Get towngoals for town of the User (SQL -IndividualTownGoals +TownGoals)
+        let goalsInfoQuery = await requestTran.query(`
+        SELECT * FROM TownGoals WHERE townID = @townID
+        `);
         let goalsInfo = goalsInfoQuery.recordset[0];
 
         let goalText; let goalGood; let quantityNeeded; let quantityHave;
@@ -85,7 +128,6 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
             quantityHave = goalsInfo[`progress_${goalNum}`]
 
             if (goalGood === contributedGood) {
-                requestTran.input('qty', sql.Int, contributedQuantity)
                 // Add the contributed quantity to the town goal
                 await requestTran.query(`
                     UPDATE TownGoals SET progress_${goalNum} = progress_${goalNum} + @qty WHERE townID = @townID
@@ -128,9 +170,11 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                     // Outside of transaction, add XP then check for new perk levels. XP is 1200 for animal produce goals, 1000 for crop goals
                     let earnedXP = goalGood.includes("_") ? 1200 : 1000;
                     requestConn.input('earnedXP', sql.Int, earnedXP)
+                    // SQL -Towns +TownPurchases
                     let townXP = await requestConn.query(`
                         UPDATE Towns SET townXP = townXP + @earnedXP WHERE townID = @townID
                         SELECT * FROM Towns WHERE townID = @townID
+                        UPDATE TownPurchases SET townFunds = townFunds + @earnedXP WHERE townID = @townID
                     `)
 
                     // Give each user credit for their fraction of the contribution
@@ -149,33 +193,7 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                     // Ensure main code does not terminate before done
                     await Promise.all(xpPromises);
 
-                    let townLevel = calcTownLevel(townXP.recordset[0].townXP);
-                    let perkLevels = calcPerkLevels(townLevel);
-                    let levelledUp = false;
 
-                    if (perkLevels.growthPerk !== townXP.recordset[0].growthPerkLevel) {
-                        await requestConn.query(`
-                        UPDATE Towns SET growthPerkLevel = ${perkLevels.growthPerk} WHERE townID = @townID`)
-                        levelledUp = true;
-                    }
-                    if (perkLevels.partsPerk !== townXP.recordset[0].partsPerkLevel) {
-                        await requestConn.query(`
-                        UPDATE Towns SET partsPerkLevel = ${perkLevels.partsPerk} WHERE townID = @townID`)
-                        levelledUp = true;
-                    }
-                    if (perkLevels.orderRefreshPerk !== townXP.recordset[0].orderRefreshLevel) {
-                        await requestConn.query(`
-                        UPDATE Towns SET orderRefreshLevel = ${perkLevels.orderRefreshPerk} WHERE townID = @townID`)
-                        levelledUp = true;
-                    }
-                    if (perkLevels.animalPerk !== townXP.recordset[0].animalPerkLevel) {
-                        await requestConn.query(`
-                        UPDATE Towns SET animalPerkLevel = ${perkLevels.animalPerk} WHERE townID = @townID`)
-                        levelledUp = true;
-                    }
-                    if (levelledUp) {
-                        townServerBroadcast(townID, `Town has levelled up!`)
-                    }
                 } else {
                     // They contributed to a goal, but it is not completed, so just increment TownContributions
                     await requestTran.query(`

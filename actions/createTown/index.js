@@ -2,6 +2,7 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO');
 const { giveUnlockID } = require('../../unlockFunctions')
+const { allNewIndividualGoals } = require('../shared/townHelpers')
 
 module.exports = async function (ws, actionData) {
 
@@ -55,9 +56,25 @@ module.exports = async function (ws, actionData) {
                     INSERT INTO TownMembers (UserID, RoleID, townID) VALUES (@UserID, 4, @townID)
                 `)
             }
-
-            // MSSQL Create row in town goals, using townID (SQL -Towns +-TownGoals +TownContributions)
+            // MSSQL create 10 random starter individual town goals, at least always 5 
+            const individualGoals = allNewIndividualGoals();
+            
+            // MSSQL Create row in town goals, using townID (SQL -Towns +-IndividualTownGoals +-TownGoals +TownContributions)
             await request.query(`
+            INSERT INTO IndividualTownGoals (Good, Quantity, townID, goalID) VALUES 
+            ('${individualGoals[0][0]}', '${individualGoals[0][1]}', @townID, 1),
+            ('${individualGoals[1][0]}', '${individualGoals[1][1]}', @townID, 2),
+            ('${individualGoals[2][0]}', '${individualGoals[2][1]}', @townID, 3),
+            ('${individualGoals[3][0]}', '${individualGoals[3][1]}', @townID, 4),
+            ('${individualGoals[4][0]}', '${individualGoals[4][1]}', @townID, 5),
+            ('${individualGoals[5][0]}', '${individualGoals[5][1]}', @townID, 6),
+            ('${individualGoals[6][0]}', '${individualGoals[6][1]}', @townID, 7),
+            ('${individualGoals[7][0]}', '${individualGoals[7][1]}', @townID, 8),
+            ('${individualGoals[8][0]}', '${individualGoals[8][1]}', @townID, 9),
+            ('${individualGoals[9][0]}', '${individualGoals[9][1]}', @townID, 10),
+            ('${individualGoals[10][0]}', '${individualGoals[10][1]}', @townID, 11),
+            ('${individualGoals[11][0]}', '${individualGoals[11][1]}', @townID, 12)
+
             INSERT INTO TownGoals (townID, goal_1, goal_2, goal_3, goal_4, goal_5, goal_6, goal_7, goal_8)
             VALUES (@townID, 
             '${TOWNINFO.starterGoals.goal_1} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_1]}',
@@ -69,6 +86,7 @@ module.exports = async function (ws, actionData) {
             '${TOWNINFO.starterGoals.goal_7} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_7]}',
             '${TOWNINFO.starterGoals.goal_8} ${TOWNINFO.goalQuantities[TOWNINFO.starterGoals.goal_8]}'
             )
+            INSERT INTO TownPurchases (townID) VALUES (@townID)
             UPDATE TownContributions SET townID = @townID WHERE UserID = @UserID
             `)
 

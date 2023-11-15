@@ -61,7 +61,7 @@ module.exports = async function (ws, actionData) {
         let profileTownQuery = await request.query(`
             DELETE FROM TownMembers WHERE UserID = @UserID
         `)
-        // If last person and leader, delete town goals (SQL -TownMembers +TownGoals)
+        // If last person and leader, delete town goals and purchases (SQL -TownMembers +-TownGoals) Town purchases will auto delete bc cascade
         if (myRoleID === 4 && numMembers === 0) {
             await request.query(`
                 DELETE FROM TownGoals WHERE townID = @earlyTownID

@@ -10,7 +10,7 @@ module.exports = async function () {
     let connection;
     try {
         connection = await poolPromise;
-        await connection.query(`UPDATE Animals SET Happiness = Happiness - 0.005 WHERE Happiness > 0`);
+        await connection.query(`UPDATE Animals SET Happiness = Happiness - 0.005 WHERE Happiness >= 0.05`);
     } catch (error) {
         console.log(error)
     }

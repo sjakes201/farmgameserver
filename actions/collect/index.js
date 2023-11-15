@@ -5,6 +5,7 @@ const CONSTANTS = require('../shared/CONSTANTS');
 const UPGRADES = require('../shared/UPGRADES');
 const townGoalContribute = require(`../shared/townGoalContribute`);
 const TOWNINFO = require('../shared/TOWNINFO');
+const TOWNSHOP = require('../shared/TOWNSHOP')
 
 module.exports = async function (ws, actionData) {
 
@@ -28,16 +29,14 @@ module.exports = async function (ws, actionData) {
             UPDATE Logins SET LastSeen = ${Date.now()} WHERE UserID = @UserID
             SELECT 
                 TM.townID, 
-                P.XP,
-                T.animalPerkLevel
+                TP.animalTimeLevel
             FROM 
                 TownMembers TM
             INNER JOIN 
-                Towns T ON T.townID = TM.townID
-            INNER JOIN
-                Profiles P ON P.UserID = TM.UserID
+                TownPurchases TP ON TP.townID = TM.townID
             WHERE 
                 TM.UserID = @UserID;
+
             SELECT * 
             FROM 
                 Upgrades 
@@ -45,8 +44,8 @@ module.exports = async function (ws, actionData) {
                 UserID = @UserID;
 
         `);
-        let upgrades = userQuery.recordsets[1][0]
         let townPerks = userQuery.recordsets[0][0]
+        let upgrades = userQuery.recordsets[1][0]
 
         // Begin transaction
         transaction = new sql.Transaction(connection);
@@ -98,8 +97,8 @@ module.exports = async function (ws, actionData) {
         let last_produce = animalInfo.recordset[0].Last_produce;
         let timeNeeded = UPGRADES[collectTableName][animalInfo.recordset[0].Animal_type][0]
 
-        if (townPerks?.animalPerkLevel) {
-            let boostPercent = TOWNINFO.upgradeBoosts.animalPerkLevel[townPerks.animalPerkLevel];
+        if (townPerks?.animalTimeLevel > 0) {
+            let boostPercent = TOWNSHOP.perkBoosts.animalTimeLevel[townPerks.animalTimeLevel-1];
             let boostChange = 1 - boostPercent;
             timeNeeded *= boostChange;
         }

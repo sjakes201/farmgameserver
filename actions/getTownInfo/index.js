@@ -30,26 +30,43 @@ module.exports = async function (ws, actionData) {
         const myTownID = townInfo?.recordsets?.[0]?.[0]?.townID;
 
         let targetTown = townInfo.recordsets[1][0]
+
+        if (!targetTown) {
+            return {
+                success: false,
+                message: `Town 'townName' not found`
+            }
+        }
+        request.input('targetTownID', sql.Int, targetTown.townID)
         // Are you in the town? No = you are just viewing, and will receive less information
         // TODO: add contributions fetch to this
         let moreTownInfo = await request.query(`
-        SELECT UserID, RoleID FROM TownMembers WHERE townID = ${targetTown.townID}
-        SELECT * FROM TownGoals WHERE townID = ${targetTown.townID}
+        SELECT UserID, RoleID FROM TownMembers WHERE townID = @targetTownID
+
+        SELECT 
+            ITG.Good, ITG.Quantity, ITG.Expiration, ITG.progress, ITG.goalID, L.Username, P.profilePic
+        FROM IndividualTownGoals AS ITG 
+        LEFT JOIN Logins as L ON ITG.UserID = L.UserID
+        LEFT JOIN Profiles as P on ITG.UserID = P.UserID
+        WHERE ITG.townID = @targetTownID
+        
+        SELECT * FROM TownGoals WHERE townID = @targetTownID
+        SELECT townFunds, cropTimeLevel, animalTimeLevel, partsChanceLevel, orderRefreshLevel, happinessMultiplierLevel FROM TownPurchases WHERE townID = @targetTownID
         `)
         let myRoleID = moreTownInfo.recordsets[0].filter((obj) => {
             return obj.UserID === UserID
         })?.[0]?.RoleID;
 
+        let indivGoals = moreTownInfo.recordsets?.[1]
+        let goals = [moreTownInfo.recordsets[2][0].goal_1, moreTownInfo.recordsets[2][0].goal_2, moreTownInfo.recordsets[2][0].goal_3, moreTownInfo.recordsets[2][0].goal_4, moreTownInfo.recordsets[2][0].goal_5, moreTownInfo.recordsets[2][0].goal_6, moreTownInfo.recordsets[2][0].goal_7, moreTownInfo.recordsets[2][0].goal_8]
+        let progresses = [moreTownInfo.recordsets[2][0].progress_1, moreTownInfo.recordsets[2][0].progress_2, moreTownInfo.recordsets[2][0].progress_3, moreTownInfo.recordsets[2][0].progress_4, moreTownInfo.recordsets[2][0].progress_5, moreTownInfo.recordsets[2][0].progress_6, moreTownInfo.recordsets[2][0].progress_7, moreTownInfo.recordsets[2][0].progress_8]
+        let townPurchases = moreTownInfo.recordsets?.[3]?.[0];
 
-        // goal number is at index - 1
-        // Towngoals 1,2,3 and 4 are selected by leader, 5,6,7,8 are random
-        let goals = [moreTownInfo.recordsets[1][0].goal_1, moreTownInfo.recordsets[1][0].goal_2, moreTownInfo.recordsets[1][0].goal_3, moreTownInfo.recordsets[1][0].goal_4, moreTownInfo.recordsets[1][0].goal_5, moreTownInfo.recordsets[1][0].goal_6, moreTownInfo.recordsets[1][0].goal_7, moreTownInfo.recordsets[1][0].goal_8]
-        let progresses = [moreTownInfo.recordsets[1][0].progress_1, moreTownInfo.recordsets[1][0].progress_2, moreTownInfo.recordsets[1][0].progress_3, moreTownInfo.recordsets[1][0].progress_4, moreTownInfo.recordsets[1][0].progress_5, moreTownInfo.recordsets[1][0].progress_6, moreTownInfo.recordsets[1][0].progress_7, moreTownInfo.recordsets[1][0].progress_8]
         let goalsData = []
         goals.forEach((goal, index) => {
             goalsData.push({
-                good: goals[index].split(" ")[0],
-                numNeeded: goals[index].split(" ")[1],
+                good: goal.split(" ")[0],
+                numNeeded: goal.split(" ")[1],
                 numHave: progresses[index]
             })
         })
@@ -89,7 +106,6 @@ module.exports = async function (ws, actionData) {
             })
             // Last seen will be a certain amount of hours ago, 1 day, or two days
             let hoursPassed = (member.LastSeen - Date.now()) / 1000 / 60 / 60;
-            let reportedTimePassed;
             if (hoursPassed < (1 / 6)) {
                 reportedTimePassed = 0;
             } else if (hoursPassed >= (1 / 6) && hoursPassed < 1) {
@@ -128,6 +144,7 @@ module.exports = async function (ws, actionData) {
                 status: targetTown.status,
                 playersData: playersData,
                 // goalsData: goalsData,
+                // indivGoals: indivGoals,
                 growthPerkLevel: targetTown.growthPerkLevel,
                 partsPerkLevel: targetTown.partsPerkLevel,
                 orderRefreshPerkLevel: targetTown.orderRefreshLevel,
@@ -147,6 +164,8 @@ module.exports = async function (ws, actionData) {
             status: targetTown.status,
             playersData: playersData,
             goalsData: goalsData,
+            townShopInfo: townPurchases,
+            indivGoals: indivGoals,
             growthPerkLevel: targetTown.growthPerkLevel,
             partsPerkLevel: targetTown.partsPerkLevel,
             orderRefreshPerkLevel: targetTown.orderRefreshLevel,

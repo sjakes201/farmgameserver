@@ -4,6 +4,7 @@ const CONSTANTS = require('../shared/CONSTANTS');
 const UPGRADES = require('../shared/UPGRADES');
 const ORDERS = require('../shared/ORDERS');
 const TOWNINFO = require('../shared/TOWNINFO');
+const TOWNSHOP = require('../shared/TOWNSHOP');
 
 const calcLevel = (XP) => {
     const lvlThresholds = CONSTANTS.xpToLevel;
@@ -46,18 +47,17 @@ module.exports = async function (ws, actionData) {
         let preRequest = new sql.Request(connection)
         preRequest.input(`UserID`, sql.Int, UserID);
         // get unlocks info
-        let upgradesQuery = await preRequest.query(`SELECT exoticPermit, deluxePermit FROM Upgrades WHERE UserID = @UserID`)
         let currentOrders = await preRequest.query(`SELECT * FROM ORDERS WHERE UserID = @UserID`)
 
         let userQuery = await preRequest.query(`
             SELECT 
                 TM.townID, 
                 P.XP,
-                T.orderRefreshLevel
+                TP.orderRefreshLevel
             FROM 
                 TownMembers TM
             INNER JOIN 
-                Towns T ON T.townID = TM.townID
+                TownPurchases TP ON TP.townID = TM.townID
             INNER JOIN
                 Profiles P ON P.UserID = TM.UserID
             WHERE 
@@ -69,10 +69,9 @@ module.exports = async function (ws, actionData) {
                 UserID = @UserID;
 
         `);
-        console.log(userQuery.recordsets)
         let townPerks = userQuery.recordsets[0][0]
 
-        let XP = userQuery.recordsets[0][0].XP, exoticPermit = upgradesQuery.recordset[0].exoticPermit, deluxePermit = upgradesQuery.recordset[0].deluxePermits;
+        let XP = userQuery.recordsets[0][0].XP, exoticPermit = userQuery.recordsets[1][0].exoticPermit, deluxePermit = userQuery.recordsets[1][0].deluxePermits;
         let unlockedGoods = [];
 
         //
@@ -148,8 +147,9 @@ module.exports = async function (ws, actionData) {
                                                UPDATE Profiles SET LastOrderRefresh = ${Date.now()} WHERE UserID = @UserID`);
         let lastTime = lastRefresh.recordset[0].LastOrderRefresh;
         let timePassedMS = Date.now() - lastTime;
-        if (townPerks?.orderRefreshLevel) {
-            let boostPercent = TOWNINFO.upgradeBoosts.orderRefreshPerkLevel[townPerks.orderRefreshLevel];
+
+        if (townPerks?.orderRefreshLevel > 0) {
+            let boostPercent = TOWNSHOP.perkBoosts.partsChanceLevel[townPerks.orderRefreshLevel - 1];
             let boostChange = 1 + boostPercent;
             timePassedMS *= boostChange;
         }

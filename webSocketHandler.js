@@ -18,7 +18,6 @@ function setupWebSocket(wss) {
                 let guestInfo = await tempAuth(ws)
                 if (guestInfo.auth && guestInfo.token) {
                     userData = decodeUserID(guestInfo.token);
-                    console.log(userData)
                     if (userData.auth) {
                         ws.UserID = userData.UserID;
                         ws.send(JSON.stringify({
@@ -76,25 +75,13 @@ function setupWebSocket(wss) {
         }
     });
 
-    try {
-        let intervalID = setInterval(() => {
-            let connInfoString = '';
-            connectedUsers.forEach((userObj) => {
-                connInfoString += ` (${userObj.UserID} > LC: ${Math.round((Date.now() - userObj.connectedAt) / 1000 / 60)} mins | LA: ${Math.round((Date.now() - userObj.lastActive) / 1000)} secs) `
-            })
-            console.log(`
-          \n
-      [***** LIVE STATS *****]\n
-      Currently connected users: ${connectedUsers.length}
-      (UserID, session duration):
-      ${connInfoString}
-      [*****            *****]
-      \n
-          `)
-        }, 30000)
-    } catch (error) {
-        console.log(error)
-    }
+    // try {
+    //     setInterval(() => {
+    //         console.log(connectedUsers[0].userWs?.townID)
+    //     }, 2000)
+    // } catch (error) {
+    //     console.log(error)
+    // }
 }
 
 module.exports = {
