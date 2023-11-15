@@ -40,6 +40,7 @@ module.exports = async function (ws, actionData) {
         request.input('townID', sql.Int, townIDQuery.recordset[0].townID)
         const goalExpirationMS = Date.now() + TOWNINFO.VALUES.indivGoalExpiryMS;
         request.input('goalExpiration', sql.BigInt, goalExpirationMS)
+        request.multiple = true;
         let claimQuery = await request.query(`
             SELECT
             CASE
@@ -47,9 +48,18 @@ module.exports = async function (ws, actionData) {
                 THEN 'true' 
                 ELSE 'false' 
             END AS alreadyClaimedAGoal
+
+            SELECT UserID FROM IndividualTownGoals WHERE townID = @townID AND goalID = @goalID
     
             UPDATE IndividualTownGoals SET UserID = @UserID, Expiration = @goalExpiration WHERE townID = @townID AND goalID = @goalID
         `)
+        if(Number.isInteger(claimQuery.recordsets[1][0].UserID)) {
+                await transaction.rollback();
+                return {
+                    success: false,
+                    message: "Someone else is already doing that goal"
+                }
+        }
         const alreadyHadGoal = claimQuery.recordset[0].alreadyClaimedAGoal;
         if(alreadyHadGoal === 'true') {
             await transaction.rollback();

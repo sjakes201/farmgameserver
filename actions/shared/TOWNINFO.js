@@ -1,7 +1,7 @@
 module.exports = {
     VALUES: {
         townMemberLimit: 25,
-        indivGoalExpiryMS: 1 * 60 * 60 * 1000
+        indivGoalExpiryMS: 1 * 60 * 60 * 1000, // 1 hour
     },
     starterGoals: {
         goal_1: "corn",

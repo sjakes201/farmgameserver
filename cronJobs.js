@@ -4,6 +4,7 @@ const updateMarketPricesTIMER = require('./serverActions/updateMarketPricesTIMER
 const clearTempLeaderboardTIMER = require('./serverActions/clearTempLeaderboardTIMER/index')
 const transferInactiveLeaders = require('./serverActions/transferInactiveLeaders/index');
 const updateMarketMultipliers = require('./serverActions/updateMarketMultipliers/index')
+const resetExpiredIndivGoals = require('./serverActions/resetExpiredIndivGoals/index')
 
 const cron = require('node-cron');
 
@@ -74,6 +75,16 @@ const scheduleTasks = () => {
             console.log("Not running leaderboard refresh")
         }
     });
+
+    cron.schedule('*/1 * * * *', async () => {
+        try {
+            await resetExpiredIndivGoals()
+            console.log(`Successfully ran resetExpiredIndivGoals`);
+        } catch (error) {
+            console.log('Error running resetExpiredIndivGoals:', error);
+        }
+    });
+
     console.log("Started cronjob file")
 };
 
