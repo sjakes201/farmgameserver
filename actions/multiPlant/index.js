@@ -81,7 +81,7 @@ module.exports = async function (ws, actionData) {
             UPDATE Inventory_SEEDS SET ${seed} = ${seed} - ${plantableCount} WHERE UserID = @UserID
             SELECT ${seed} FROM Inventory_SEEDS WHERE UserID = @UserID
         `)
-        if (seedQuery.recordset[0] < 0) {
+        if (seedQuery.recordset[0][seed] < 0) {
             await transaction.rollback();
             return {
                 message: 'Insufficient seed count in inventory'
