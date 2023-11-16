@@ -3,17 +3,17 @@ const { poolPromise } = require('../../db');
 const TOWNINFO = require('../../actions/shared/TOWNINFO')
 
 module.exports = async function (ws, actionData) {
-    if (process.env.NODE_ENV === 'TESTING') {
-        console.log("TESTING ENV, NOT RUNNING")
-        return;
-    }
+    // if (process.env.NODE_ENV === 'TESTING') {
+    //     console.log("TESTING ENV, NOT RUNNING")
+    //     return;
+    // }
     
     let connection;
     try {
         connection = await poolPromise;
         const request = new sql.Request(connection);
 
-        request.input('expiration', sql.BigInt, Date.now() - TOWNINFO.VALUES.indivGoalExpiryMS);
+        request.input('now', sql.BigInt, Date.now());
         let resetExpiry = await request.query(`
             UPDATE itg
             SET 
@@ -24,7 +24,7 @@ module.exports = async function (ws, actionData) {
                 itg.Expiration = NULL
             FROM IndividualTownGoals itg
             CROSS JOIN (SELECT TOP 1 Good, Quantity FROM IndivGoalGoodsQuantities ORDER BY NEWID()) gq
-            WHERE itg.Expiration < @expiration;
+            WHERE itg.Expiration < @now;
         `)
     } catch (error) {
         console.log(error);
