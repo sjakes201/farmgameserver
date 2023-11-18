@@ -3,10 +3,10 @@ const { poolPromise } = require('../../db');
 const TOWNINFO = require('../../actions/shared/TOWNINFO')
 
 module.exports = async function (ws, actionData) {
-    // if (process.env.NODE_ENV === 'TESTING') {
-    //     console.log("TESTING ENV, NOT RUNNING")
-    //     return;
-    // }
+    if (process.env.NODE_ENV === 'TESTING') {
+        console.log("TESTING ENV, NOT RUNNING")
+        return;
+    }
     
     let connection;
     try {
