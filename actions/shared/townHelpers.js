@@ -97,7 +97,6 @@ function newIndividualGoal(currentGoals) {
     let randomIndex = Math.floor(Math.random() * allGoods.length);
     let newGood = allGoods[randomIndex];
     let newQuantity = TOWNINFO.individualGoalQuantities[newGood];
-
     return [newGood, newQuantity] 
 }
 
