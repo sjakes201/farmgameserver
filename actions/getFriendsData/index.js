@@ -28,6 +28,10 @@ module.exports = async function (ws, actionData) {
                 ELSE F.receiverLastFeed
             END as yourLastFeed,
             CASE 
+                WHEN F.senderUserID = @UserID THEN F.receiverLastFeed
+                ELSE F.senderLastFeed
+            END AS theirLastFeed,
+            CASE 
                 WHEN F.senderUserID = @UserID THEN RP.profilePic
                 ELSE SP.profilePic
             END as friendProfilePic
