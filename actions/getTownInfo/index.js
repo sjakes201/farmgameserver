@@ -104,19 +104,24 @@ module.exports = async function (ws, actionData) {
                     playerContributions[goalObj.good] = targetPlayerGoals[`progress_${index + 1}`]
                 }
             })
-            // Last seen will be a certain amount of hours ago, 1 day, or two days
-            let hoursPassed = (member.LastSeen - Date.now()) / 1000 / 60 / 60;
-            if (hoursPassed < (1 / 6)) {
-                reportedTimePassed = 0;
-            } else if (hoursPassed >= (1 / 6) && hoursPassed < 1) {
-                reportedTimePassed = 1;
+
+            let seenString = 'Not seen recently';
+            let hoursPassed = (Date.now() - member.LastSeen) / 1000 / 60 / 60;
+
+            if (hoursPassed < 0.1) {
+                seenString = 'Online'
+            } else if (hoursPassed >= 0.1 && hoursPassed < 1) {
+                seenString = '< 1 hour ago'
             } else if (hoursPassed >= 1 && hoursPassed < 24) {
-                reportedTimePassed = Math.round(hoursPassed);
+                seenString = '< 1 day ago'
             } else if (hoursPassed >= 24 && hoursPassed < 48) {
-                reportedTimePassed = 24;
-            } else {
-                reportedTimePassed = 48;
+                seenString = '< 2 days ago'
+            } else if (hoursPassed >= 48 && hoursPassed < 72) {
+                seenString = '< 3 days ago'
+            } else if (hoursPassed >= 72 && hoursPassed < 168) {
+                seenString = '< 1 week ago'
             }
+
             let playerData = {
                 username: member.Username,
                 xp: targetPlayerInfo.XP,
@@ -126,7 +131,7 @@ module.exports = async function (ws, actionData) {
             if (myRoleID) {
                 playerData.contributions = playerContributions;
                 playerData.contributedTownXP = contributedTownXP;
-                // playerData.reportedTimePassed = reportedTimePassed;
+                playerData.seenString = seenString;
             }
             playersData.push(playerData)
         })
