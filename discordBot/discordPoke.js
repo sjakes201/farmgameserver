@@ -18,13 +18,11 @@ async function pokeUser(msgSenderID, targetUsername) {
         SELECT UserID FROM DiscordData WHERE DiscordID = @senderDiscordID
         `)
         if(targetQuery.recordsets[1].length === 0) {
-            console.log('a')
             return {
                 message: "You need to link your Discord before poking!"
             }
         }
         if(targetQuery.recordsets[0].length === 0) {
-            console.log('b')
             return {
                 message: `User ${targetUsername} does not exist!`
             }

@@ -118,7 +118,6 @@ client.on('messageCreate', async (message) => {
         // You can also add more patterns or commands here
         // ...
     } catch (error) {
-        console.log(error)
     }
 });
 
@@ -141,7 +140,6 @@ async function getSQLData(leaderboardType) {
         }
         return data.recordset;
     } catch (error) {
-        console.log(error)
         return {}
     }
 }
@@ -153,7 +151,6 @@ async function assignFarmerRoleToLinkedUsers() {
 
         const role = guild.roles.cache.find(r => r.name === 'Farmer');
         if (!role) {
-            console.log("Role 'Farmer' not found.");
             return;
         }
 
@@ -166,14 +163,11 @@ async function assignFarmerRoleToLinkedUsers() {
                 }
                 if (member && !member.roles.cache.has(role.id)) {
                     await member.roles.add(role);
-                    console.log(`Assigned 'Farmer' role to ${member.user.tag}`);
                 }
             } catch (error) {
-                console.error(`Error assigning role to ${discordID}:`, error);
             }
         }
     } catch (error) {
-        console.log(error);
     }
 }
 
@@ -185,7 +179,6 @@ async function getLinkedDiscordUsers() {
         `);
         return data.recordset.map(row => row.DiscordID);
     } catch (error) {
-        console.log(error);
         return [];
     }
 }
@@ -202,11 +195,10 @@ async function assignAllTimeLeaderboardRoles() {
                 if (!user[category] || user[category] > 3) continue;
                 let member = guild.members.cache.get(user.DiscordID)
                 if (member === undefined) {
-                    member = await guild.members.fetch(user.DiscordID).catch(err => console.log("Member not found"));
+                    member = await guild.members.fetch(user.DiscordID).catch(err => {});
                 }
                 const role = guild.roles.cache.find(r => r.name === roleName);
                 if (member && role) {
-                    console.log(`giving role ${role} to member ${member}`)
                     member.roles.add(role).catch(console.error)
                 }
 
@@ -218,7 +210,6 @@ async function assignAllTimeLeaderboardRoles() {
             setRoles(catArr[0], catArr[1], allMembersData);
         })
     } catch (error) {
-        console.log(error)
     }
 }
 
@@ -249,7 +240,6 @@ async function assignWeeklyLeaderboardRoles() {
             setRoles(catArr[0], catArr[1], allMembersData);
         })
     } catch (error) {
-        console.log(error)
     }
 }
 
@@ -260,7 +250,6 @@ async function removeRoleFromAllMembers(roleName, allMembers) {
     // Fetch the role by its name
     const role = guild.roles.cache.find(r => r.name === roleName);
     if (!role) {
-        console.log(`Role ${roleName} not found.`);
         return;
     }
 
@@ -269,10 +258,7 @@ async function removeRoleFromAllMembers(roleName, allMembers) {
         if (member.roles.cache.has(role.id)) {  // Check if member has the role
             try {
                 await member.roles.remove(role);
-                console.log(`removing ${roleName} from ${member}`)
-            } catch (error) {
-                console.error(`Error removing role from ${member.user.tag}:`, error);
-            }
+            } catch (error) {            }
         }
     }
 }
