@@ -5,7 +5,6 @@ module.exports = async function (UserID, IP) {
 
     let connection;
     try {
-        console.log(`Received in logUserIP: UserID: ${typeof UserID} ${UserID} and IP: ${typeof IP} ${IP}`)
         connection = await poolPromise;
         let request = new sql.Request(connection);
         request.input('UserID', sql.Int, UserID)

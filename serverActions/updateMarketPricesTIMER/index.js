@@ -37,8 +37,8 @@ module.exports = async function () {
             if (new_volume === 0) new_volume = 1;
             let change = old_volume / new_volume;
 
-            let floor = 0.8;
-            let ceiling = 1.2;
+            let floor = 0.7;
+            let ceiling = 1.3;
 
             if (CONSTANTS.LuxuryGoods.includes(good)) {
                 floor += 0.1;
