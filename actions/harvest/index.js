@@ -90,7 +90,7 @@ module.exports = async function (ws, actionData) {
 
         let cropID = tilecontents.recordset[0].CropID;
         let secsNeeded = (UPGRADES[growthTableName][CONSTANTS.ProduceNameFromID[cropID]]).reduce((prev, sum) => sum + prev);
-        // Reduce secsNeeded based on town's growthPerkLevel
+        // Reduce secsNeeded based on town's growth perk level
         if (townPerks?.cropTimeLevel > 0) {
             let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
             let boostChange = 1 - boostPercent;
