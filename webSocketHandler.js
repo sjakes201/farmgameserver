@@ -49,8 +49,13 @@ function setupWebSocket(wss) {
                 console.log(`Client UserID ${ws.UserID} reconnected`);
             }
 
-            const userIP = req.connection.remoteAddress;
-            logUserIP(ws.UserID, userIP)
+            try {
+                const userIP = req.connection.remoteAddress;
+                console.log(`Calling logUserIP from webSocketHandler with UserID: ${typeof ws.UserID} ${ws.UserID} and IP: ${typeof userIP} ${userIP}`)
+                logUserIP(ws.UserID, userIP)
+            } catch (error) {
+                console.log(error)
+            }
 
             ws.on('message', async (message) => {
                 try {
