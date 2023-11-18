@@ -56,7 +56,7 @@ module.exports = async function (ws, actionData) {
         let myRoleID = moreTownInfo.recordsets[0].filter((obj) => {
             return obj.UserID === UserID
         })?.[0]?.RoleID;
-
+        
         let indivGoals = moreTownInfo.recordsets?.[1]
         let goals = [moreTownInfo.recordsets[2][0].goal_1, moreTownInfo.recordsets[2][0].goal_2, moreTownInfo.recordsets[2][0].goal_3, moreTownInfo.recordsets[2][0].goal_4, moreTownInfo.recordsets[2][0].goal_5, moreTownInfo.recordsets[2][0].goal_6, moreTownInfo.recordsets[2][0].goal_7, moreTownInfo.recordsets[2][0].goal_8]
         let progresses = [moreTownInfo.recordsets[2][0].progress_1, moreTownInfo.recordsets[2][0].progress_2, moreTownInfo.recordsets[2][0].progress_3, moreTownInfo.recordsets[2][0].progress_4, moreTownInfo.recordsets[2][0].progress_5, moreTownInfo.recordsets[2][0].progress_6, moreTownInfo.recordsets[2][0].progress_7, moreTownInfo.recordsets[2][0].progress_8]
@@ -145,7 +145,7 @@ module.exports = async function (ws, actionData) {
                 townLogoNum: targetTown.townLogoNum,
                 townName: targetTown.townName,
                 description: targetTown.townDescription,
-                memberCount: targetTown.memberCount,
+                memberCount: moreTownInfo.recordsets?.[0]?.length,
                 status: targetTown.status,
                 playersData: playersData,
                 // goalsData: goalsData,
@@ -165,7 +165,7 @@ module.exports = async function (ws, actionData) {
             townLogoNum: targetTown.townLogoNum,
             townName: targetTown.townName,
             description: targetTown.townDescription,
-            memberCount: targetTown.memberCount,
+            memberCount: moreTownInfo.recordsets?.[0]?.length,
             status: targetTown.status,
             playersData: playersData,
             goalsData: goalsData,

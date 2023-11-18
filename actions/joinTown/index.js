@@ -45,11 +45,19 @@ module.exports = async function (ws, actionData) {
         request.input(`townID`, sql.Int, townID);
 
         // Check for opening (SQL +Towns)
+        request.multiple = true;
         let openTown = await request.query(`
-        UPDATE Towns SET memberCount = memberCount + 1 WHERE townID = @townID
-        SELECT memberCount, status FROM Towns WHERE townID = @townID
+            SELECT status FROM Towns WHERE townID = @townID
+            SELECT COUNT(*) AS memberCount FROM TownMembers WHERE townID = @townID
         `)
-        if (openTown.recordset[0].memberCount > TOWNINFO.VALUES.townMemberLimit || openTown.recordset[0].status !== 'OPEN') {
+        let memberCount = openTown.recordsets[1][0].memberCount;
+        if(!Number.isInteger(memberCount)) {
+            await transaction.rollback();
+            return {
+                message: `Error getting town member count`
+            };
+        }
+        if (memberCount + 1 > TOWNINFO.VALUES.townMemberLimit || openTown.recordset[0].status !== 'OPEN') {
             await transaction.rollback();
             return {
                 message: `Town at capacity or closed to new members`
@@ -73,7 +81,7 @@ module.exports = async function (ws, actionData) {
         await transaction.commit();
         townServerBroadcast(townID, `${username} has joined the town!`)
         giveUnlockID(UserID, 9);
-        
+
         return {
             message: "SUCCESS"
         }

@@ -33,9 +33,8 @@ module.exports = async function (ws, actionData) {
         request.input(`earlyTownID`, sql.Int, earlyTownID)
 
         // Decrement town member count (SQL +Towns)
-        let memberCountQuery = await request.query(`
-        UPDATE Towns SET memberCount = memberCount - 1 WHERE townID = @earlyTownID
-        SELECT memberCount FROM Towns WHERE townID = @earlyTownID
+        let currentMemberCount = await request.query(`
+            SELECT COUNT(*) as memberCount FROM TownMembers WHERE townID = @earlyTownID
         `)
         // SQL -Towns +TownMembers
         let myRoleQuery = await request.query(`
@@ -43,7 +42,7 @@ module.exports = async function (ws, actionData) {
         `)
         let myRoleID = myRoleQuery.recordset?.[0]?.RoleID;
         let myTownID = myRoleQuery.recordset?.[0]?.townID;
-        let numMembers = memberCountQuery.recordset[0].memberCount;
+        let numMembers = currentMemberCount.recordset[0].memberCount;
 
         if (myTownID !== earlyTownID) {
             await transaction.rollback();
@@ -52,7 +51,7 @@ module.exports = async function (ws, actionData) {
             };
         }
 
-        if (myRoleID === 4 && numMembers > 0) {
+        if (myRoleID === 4 && numMembers > 1) {
             await transaction.rollback();
             return {
                 message: "Must promote new leader before leaving nonempty town"
@@ -62,7 +61,7 @@ module.exports = async function (ws, actionData) {
             DELETE FROM TownMembers WHERE UserID = @UserID
         `)
         // If last person and leader, delete town goals and purchases (SQL -TownMembers +-TownGoals) Town purchases will auto delete bc cascade
-        if (myRoleID === 4 && numMembers === 0) {
+        if (myRoleID === 4 && numMembers === 1) {
             await request.query(`
                 DELETE FROM TownGoals WHERE townID = @earlyTownID
             `)
@@ -79,7 +78,7 @@ module.exports = async function (ws, actionData) {
         await transaction.commit();
         townServerBroadcast(myTownID, `${username} has left the town.`)
 
-        if (myRoleID === 4 && numMembers === 0) {
+        if (myRoleID === 4 && numMembers === 1) {
             // They are the last person. Delete the town (outside transaction)
             await connection.query(`
                 DELETE FROM Towns WHERE townID = ${earlyTownID}
