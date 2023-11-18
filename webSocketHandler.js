@@ -1,6 +1,7 @@
 const { decodeUserID } = require('./utils');
 const tempAuth = require('./actions/tempAuth/index');
 const { handleAction } = require('./actionHandler');
+const logUserIP = require('./serverActions/logUserIP/index');
 const url = require('url');
 
 let connectedUsers = [];
@@ -48,6 +49,9 @@ function setupWebSocket(wss) {
                 console.log(`Client UserID ${ws.UserID} reconnected`);
             }
 
+            const userIP = req.connection.remoteAddress;
+            logUserIP(ws.UserID, userIP)
+
             ws.on('message', async (message) => {
                 try {
                     let user = connectedUsers.find(u => u.UserID === ws.UserID);
@@ -74,14 +78,6 @@ function setupWebSocket(wss) {
             console.log(error)
         }
     });
-
-    // try {
-    //     setInterval(() => {
-    //         console.log(connectedUsers[0].userWs?.townID)
-    //     }, 2000)
-    // } catch (error) {
-    //     console.log(error)
-    // }
 }
 
 module.exports = {
