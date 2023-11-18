@@ -10,8 +10,14 @@ const mainBot = require('./discordBot/mainBot')
 
 const { app, server } = setupExpressServer();
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ noServer: true }); // Use "noServer: true" to prevent WebSocket.Server from creating an HTTP server
 setWebSocket(wss);
+
+server.on('upgrade', (request, socket, head) => {
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit('connection', ws, request);
+  });
+});
 
 setupWebSocket(wss);
 scheduleTasks();
