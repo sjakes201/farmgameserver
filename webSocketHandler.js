@@ -9,6 +9,10 @@ let connectedUsers = [];
 function setupWebSocket(wss) {
     wss.on('connection', async (ws, req) => {
         try {
+            try { console.log("req.socket.remoteAddress ", req.socket.remoteAddress) } catch (error) { }
+            try { console.log("ws._socket.address() ", ws._socket.address()) } catch (error) { }
+            try { console.log("ws._socket.remoteAddress ", ws._socket.remoteAddress) } catch (error) { }
+
             const parameters = url.parse(req.url, true);
             const token = parameters.query.token;
 
@@ -47,14 +51,6 @@ function setupWebSocket(wss) {
                 })
             } else {
                 console.log(`Client UserID ${ws.UserID} reconnected`);
-            }
-
-            try {
-                const userIP = req.connection.remoteAddress;
-                console.log(`Calling logUserIP from webSocketHandler with UserID: ${typeof ws.UserID} ${ws.UserID} and IP: ${typeof userIP} ${userIP}`)
-                logUserIP(ws.UserID, userIP)
-            } catch (error) {
-                console.log(error)
             }
 
             ws.on('message', async (message) => {

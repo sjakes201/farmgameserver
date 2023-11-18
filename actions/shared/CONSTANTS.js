@@ -89,7 +89,7 @@ module.exports = {
         yam: 25,
         beet: 18,
         parsnip: 15,
-        bamboo: 5,
+        bamboo: 6,
         hops: 8,
         corn: 9,
         potato: 8,
