@@ -9,10 +9,6 @@ let connectedUsers = [];
 function setupWebSocket(wss) {
     wss.on('connection', async (ws, req) => {
         try {
-            try { console.log("req.socket.remoteAddress ", req.socket.remoteAddress) } catch (error) { }
-            try { console.log("ws._socket.address() ", ws._socket.address()) } catch (error) { }
-            try { console.log("ws._socket.remoteAddress ", ws._socket.remoteAddress) } catch (error) { }
-
             const parameters = url.parse(req.url, true);
             const token = parameters.query.token;
 
@@ -40,6 +36,12 @@ function setupWebSocket(wss) {
                     return;
                 }
             }
+
+            try {
+                const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+                console.log("Client IP: ", clientIp);
+                logUserIP(ws.UserID, clientIp)
+            } catch { console.log(error) }
 
             if (connectedUsers.every((obj) => obj.UserID !== ws.UserID)) {
                 console.log(`Client UserID ${ws.UserID} connected`);
