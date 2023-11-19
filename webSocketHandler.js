@@ -39,9 +39,12 @@ function setupWebSocket(wss) {
 
             try {
                 const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-                console.log("Client IP: ", clientIp);
-                logUserIP(ws.UserID, clientIp)
-            } catch { console.log(error) }
+                const ipv4 = clientIp.split(":")[0];
+                logUserIP(ws.UserID, ipv4);
+            } catch (error) {
+                console.log(error);
+            }
+
 
             if (connectedUsers.every((obj) => obj.UserID !== ws.UserID)) {
                 console.log(`Client UserID ${ws.UserID} connected`);

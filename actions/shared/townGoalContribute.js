@@ -60,25 +60,27 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
         requestTran.input('qty', sql.Int, contributedQuantity)
         // Check individual town goals (SQL +IndividualTownGoals)
         let indivGoals = await requestTran.query(`
-            SELECT Good, Quantity, progress, goalID FROM IndividualTownGoals WHERE UserID = @UserID
+            SELECT Good, Quantity, progress, townFunds, goalID FROM IndividualTownGoals WHERE UserID = @UserID
             SELECT Good FROM IndividualTownGoals WHERE townID = @townID AND (UserID != @UserID OR UserID IS NULL)
         `)
         if (indivGoals.recordsets?.[0]?.[0]?.Good === contributedGood) {
             // They have an individual goal for this good, this takes priority over town goal
+            const townFundsReward = indivGoals.recordsets[0][0].townFunds;
             const qtyNeeded = indivGoals.recordsets[0][0].Quantity;
             const qtyHave = indivGoals.recordsets[0][0].progress;
             const goalID = indivGoals.recordsets[0][0].goalID
             if (qtyHave + contributedQuantity >= qtyNeeded) {
                 // Finished individual goal, give town xp credit to both, generate new one, put in user's notifications (SQL -IndividualTownGoals +UserNotifications)
                 // generate new goal
-                const allOtherGoals = indivGoals.recordsets[1].map((goal) => goal.Good)
-                const newGoal = newIndividualGoal(allOtherGoals)
+                const allOtherGoals = indivGoals.recordsets[1]
+                const newGoal = await newIndividualGoal(allOtherGoals)
 
                 // logging old goal in notifications to claim
                 const rewards = calcIndivRewards(contributedGood, qtyNeeded);
                 requestTran.input(`goldReward`, sql.Int, rewards.gold)
-                requestTran.input('newGood', sql.NVarChar(64), newGoal[0])
-                requestTran.input('newQty', sql.Int, newGoal[1])
+                requestTran.input('newGood', sql.NVarChar(64), newGoal.Good)
+                requestTran.input('newQty', sql.Int, newGoal.Quantity)
+                requestTran.input('newTownFunds', sql.Int, newGoal.townFunds)
                 requestTran.input('goalID', sql.Int, goalID)
                 const rewardInfo = {
                     good: contributedGood,
@@ -87,13 +89,13 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                 }
                 requestTran.input('notificationString', sql.NVarChar(512), JSON.stringify(rewardInfo))
                 await requestTran.query(`
-                    UPDATE IndividualTownGoals SET UserID = NULL, Good = @newGood, Quantity = @newQty, progress = 0, Expiration = NULL WHERE townID = @townID AND goalID = @goalID
+                    UPDATE IndividualTownGoals SET UserID = NULL, Good = @newGood, Quantity = @newQty, townFunds = @newTownFunds, progress = 0, Expiration = NULL WHERE townID = @townID AND goalID = @goalID
                     INSERT INTO UserNotifications (UserID, Type, Message, GoldReward) VALUES (@UserID, 'INDIV_TOWN_GOAL_REWARD', @notificationString, @goldReward)
                 `)
                 await transaction.commit();
 
                 // Give town XP
-                let earnedXP = contributedGood.includes("_") ? 120 : 100;
+                let earnedXP = townFundsReward;
                 requestConn.input('earnedXP', sql.Int, earnedXP)
                 await requestConn.query(`
                     UPDATE Towns SET townXP = townXP + @earnedXP WHERE townID = @townID

@@ -21,9 +21,10 @@ module.exports = async function (ws, actionData) {
                 itg.progress = 0,
                 itg.Good = gq.Good,
                 itg.Quantity = gq.Quantity,
+                itg.townFunds = gq.townFunds,
                 itg.Expiration = NULL
             FROM IndividualTownGoals itg
-            CROSS JOIN (SELECT TOP 1 Good, Quantity FROM IndivGoalGoodsQuantities ORDER BY NEWID()) gq
+            CROSS JOIN (SELECT TOP 1 Good, Quantity, townFunds FROM IndivGoalGoodsQuantities ORDER BY NEWID()) gq
             WHERE itg.Expiration < @now;
         `)
     } catch (error) {
