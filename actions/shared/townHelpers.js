@@ -88,9 +88,8 @@ function calcIndivRewards (good, quantity) {
     return rewards;
 }
 
-async function newIndividualGoal(currentGoals, allGoals) {
+async function newIndividualGoal(currentGoals, allGoals, connection) {
     if(!Array.isArray(allGoals) || allGoals.length === 0) {
-        let connection = await poolPromise;
         allGoals = (await connection.query(`SELECT Good, Quantity, townFunds FROM IndivGoalGoodsQuantities`)).recordset
     }
     let allPossibleGoals = [...allGoals]
@@ -108,12 +107,11 @@ async function newIndividualGoal(currentGoals, allGoals) {
 }
 
 // Returns array of 10 new goals for new towns
-async function allNewIndividualGoals() {
-    let connection = await poolPromise;
+async function allNewIndividualGoals(connection) {
     let allPossible = (await connection.query(`SELECT Good, Quantity, townFunds FROM IndivGoalGoodsQuantities`)).recordset
     let newGoals = [];
     for(let i = 0; i < 12; ++i){
-        newGoals.push(await newIndividualGoal(newGoals, allPossible))
+        newGoals.push(await newIndividualGoal(newGoals, allPossible, connection))
     }
     return newGoals;
 }

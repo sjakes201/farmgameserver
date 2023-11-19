@@ -21,9 +21,7 @@ module.exports = async function (ws, actionData) {
     let transaction;
     try {
         connection = await poolPromise;
-
-
-
+        
         transaction = new sql.Transaction(connection);
         await transaction.begin()
         const request = new sql.Request(transaction);
@@ -57,7 +55,7 @@ module.exports = async function (ws, actionData) {
                 `)
             }
             // MSSQL create 10 random starter individual town goals, at least always 5 
-            const individualGoals = await allNewIndividualGoals();
+            const individualGoals = await allNewIndividualGoals(connection);
             // MSSQL Create row in town goals, using townID (SQL -Towns +-IndividualTownGoals +-TownGoals +TownContributions)
             await request.query(`
             INSERT INTO IndividualTownGoals (Good, Quantity, townFunds, townID, goalID) VALUES 
