@@ -71,7 +71,6 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID);
         request.input('animalID', sql.Int, parseInt(animalID));
         request.input('happinessChange', sql.Decimal(4, 3), (foodHappiness * multiplier * (multiplier === -1 ? 1 : townMultiplier)));
-        console.log((foodHappiness * multiplier * (multiplier === -1 ? 1 : townMultiplier)))
         let animalQuery = await request.query(`SELECT Last_Fed, Happiness FROM Animals WHERE UserID = @UserID AND Animal_ID = @animalID`);
         // if feed cooldown has not passed, return forbidden
         let lastFed = animalQuery.recordset[0].Last_Fed;
