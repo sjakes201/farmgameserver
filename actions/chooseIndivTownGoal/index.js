@@ -50,7 +50,7 @@ module.exports = async function (ws, actionData) {
             END AS alreadyClaimedAGoal
 
             SELECT UserID FROM IndividualTownGoals WHERE townID = @townID AND goalID = @goalID
-    
+            
             UPDATE IndividualTownGoals SET UserID = @UserID, Expiration = @goalExpiration WHERE townID = @townID AND goalID = @goalID
         `)
         if(Number.isInteger(claimQuery.recordsets[1][0].UserID)) {

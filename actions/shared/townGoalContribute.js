@@ -73,7 +73,7 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                 // Finished individual goal, give town xp credit to both, generate new one, put in user's notifications (SQL -IndividualTownGoals +UserNotifications)
                 // generate new goal
                 const allOtherGoals = indivGoals.recordsets[1]
-                const newGoal = await newIndividualGoal(allOtherGoals)
+                const newGoal = await newIndividualGoal(allOtherGoals, null, connection)
 
                 // logging old goal in notifications to claim
                 const rewards = calcIndivRewards(contributedGood, qtyNeeded);
