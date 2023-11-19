@@ -57,23 +57,23 @@ module.exports = async function (ws, actionData) {
                 `)
             }
             // MSSQL create 10 random starter individual town goals, at least always 5 
-            const individualGoals = allNewIndividualGoals();
-            
+            const individualGoals = await allNewIndividualGoals();
             // MSSQL Create row in town goals, using townID (SQL -Towns +-IndividualTownGoals +-TownGoals +TownContributions)
             await request.query(`
-            INSERT INTO IndividualTownGoals (Good, Quantity, townID, goalID) VALUES 
-            ('${individualGoals[0][0]}', '${individualGoals[0][1]}', @townID, 1),
-            ('${individualGoals[1][0]}', '${individualGoals[1][1]}', @townID, 2),
-            ('${individualGoals[2][0]}', '${individualGoals[2][1]}', @townID, 3),
-            ('${individualGoals[3][0]}', '${individualGoals[3][1]}', @townID, 4),
-            ('${individualGoals[4][0]}', '${individualGoals[4][1]}', @townID, 5),
-            ('${individualGoals[5][0]}', '${individualGoals[5][1]}', @townID, 6),
-            ('${individualGoals[6][0]}', '${individualGoals[6][1]}', @townID, 7),
-            ('${individualGoals[7][0]}', '${individualGoals[7][1]}', @townID, 8),
-            ('${individualGoals[8][0]}', '${individualGoals[8][1]}', @townID, 9),
-            ('${individualGoals[9][0]}', '${individualGoals[9][1]}', @townID, 10),
-            ('${individualGoals[10][0]}', '${individualGoals[10][1]}', @townID, 11),
-            ('${individualGoals[11][0]}', '${individualGoals[11][1]}', @townID, 12)
+            INSERT INTO IndividualTownGoals (Good, Quantity, townFunds, townID, goalID) VALUES 
+            ('${individualGoals[0].Good}', '${individualGoals[0].Quantity}', ${individualGoals[0].townFunds}, @townID, 1),
+            ('${individualGoals[1].Good}', '${individualGoals[1].Quantity}', ${individualGoals[1].townFunds}, @townID, 2),
+            ('${individualGoals[2].Good}', '${individualGoals[2].Quantity}', ${individualGoals[2].townFunds}, @townID, 3),
+            ('${individualGoals[3].Good}', '${individualGoals[3].Quantity}', ${individualGoals[3].townFunds}, @townID, 4),
+            ('${individualGoals[4].Good}', '${individualGoals[4].Quantity}', ${individualGoals[4].townFunds}, @townID, 5),
+            ('${individualGoals[5].Good}', '${individualGoals[5].Quantity}', ${individualGoals[5].townFunds}, @townID, 6),
+            ('${individualGoals[6].Good}', '${individualGoals[6].Quantity}', ${individualGoals[6].townFunds}, @townID, 7),
+            ('${individualGoals[7].Good}', '${individualGoals[7].Quantity}', ${individualGoals[7].townFunds}, @townID, 8),
+            ('${individualGoals[8].Good}', '${individualGoals[8].Quantity}', ${individualGoals[8].townFunds}, @townID, 9),
+            ('${individualGoals[9].Good}', '${individualGoals[9].Quantity}', ${individualGoals[9].townFunds}, @townID, 10),
+            ('${individualGoals[10].Good}', '${individualGoals[10].Quantity}', ${individualGoals[10].townFunds}, @townID, 11),
+            ('${individualGoals[11].Good}', '${individualGoals[11].Quantity}', ${individualGoals[11].townFunds}, @townID, 12);
+            
 
             INSERT INTO TownGoals (townID, goal_1, goal_2, goal_3, goal_4, goal_5, goal_6, goal_7, goal_8)
             VALUES (@townID, 

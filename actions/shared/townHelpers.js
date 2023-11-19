@@ -1,6 +1,8 @@
 const TOWNINFO = require('./TOWNINFO')
 const CONSTANTS = require('./CONSTANTS')
 const TOWNSHOP = require('./TOWNSHOP')
+const { poolPromise } = require('../../db');
+const sql = require('mssql');
 
 // XP is integer
 function calcTownLevel(XP) {
@@ -86,25 +88,32 @@ function calcIndivRewards (good, quantity) {
     return rewards;
 }
 
-// takes array of all goal arrays [goodName, goodQuantity], returns [newGood, newQuantity]
-function newIndividualGoal(currentGoals) {
-    let allGoods = Object.keys(TOWNINFO.individualGoalQuantities);
-    let currentNumCrops = currentGoals.filter((goal) => !goal[0].includes("_")).length;
+async function newIndividualGoal(currentGoals, allGoals) {
+    if(!Array.isArray(allGoals) || allGoals.length === 0) {
+        let connection = await poolPromise;
+        allGoals = (await connection.query(`SELECT Good, Quantity, townFunds FROM IndivGoalGoodsQuantities`)).recordset
+    }
+    let allPossibleGoals = [...allGoals]
+    let currentNumCrops = currentGoals.filter((goal) => !goal.Good.includes("_")).length;
     if(currentNumCrops < 5) {
         // Get rid of animal goals
-        allGoods = allGoods.filter((good) => !good.includes("_"))
+        allPossibleGoals = allPossibleGoals.filter((goal) => !goal.Good.includes("_"))
     }
-    let randomIndex = Math.floor(Math.random() * allGoods.length);
-    let newGood = allGoods[randomIndex];
-    let newQuantity = TOWNINFO.individualGoalQuantities[newGood];
-    return [newGood, newQuantity] 
+    if(currentNumCrops >= 7) {
+        // Get rid of crop goals
+        allPossibleGoals = allPossibleGoals.filter((goal) => goal.Good.includes("_"))
+    }
+    let randomIndex = Math.floor(Math.random() * allPossibleGoals.length);
+    return allPossibleGoals[randomIndex];
 }
 
 // Returns array of 10 new goals for new towns
-function allNewIndividualGoals() {
+async function allNewIndividualGoals() {
+    let connection = await poolPromise;
+    let allPossible = (await connection.query(`SELECT Good, Quantity, townFunds FROM IndivGoalGoodsQuantities`)).recordset
     let newGoals = [];
     for(let i = 0; i < 12; ++i){
-        newGoals.push(newIndividualGoal(newGoals))
+        newGoals.push(await newIndividualGoal(newGoals, allPossible))
     }
     return newGoals;
 }

@@ -44,7 +44,7 @@ module.exports = async function (ws, actionData) {
         SELECT UserID, RoleID FROM TownMembers WHERE townID = @targetTownID
 
         SELECT 
-            ITG.Good, ITG.Quantity, ITG.Expiration, ITG.progress, ITG.goalID, L.Username, P.profilePic
+            ITG.Good, ITG.Quantity, ITG.townFunds, ITG.Expiration, ITG.progress, ITG.goalID, L.Username, P.profilePic
         FROM IndividualTownGoals AS ITG 
         LEFT JOIN Logins as L ON ITG.UserID = L.UserID
         LEFT JOIN Profiles as P on ITG.UserID = P.UserID
