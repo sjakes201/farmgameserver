@@ -64,7 +64,7 @@ module.exports = async function (ws, actionData) {
             `)
             await transaction.commit();
             const roles = ["member", "elder", "co-leader", "leader"];
-            townServerBroadcast(targetInfo.townID, `${targetUser} has been demoted to ${roles[targetInfo.RoleID-2]}.`)
+            townServerBroadcast(targetInfo.townID, `${targetUser} has been demoted to ${roles[targetInfo.RoleID-2]}.`, 'SERVER_NOTIFICATION')
             return {
                 message: "SUCCESS, demoted"
             }

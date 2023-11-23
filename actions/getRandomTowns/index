@@ -11,20 +11,41 @@ module.exports = async function (ws, actionData) {
         connection = await poolPromise;
         const request = new sql.Request(connection)
         let data;
-        if(townName === undefined) {
+        if (townName === undefined) {
             let resultQuery = await request.query(`
-            SELECT TOP 10 townName, memberCount, townLogoNum, townXP, status
-            FROM Towns
-            WHERE STATUS = 'OPEN' AND memberCount < 25
-            ORDER BY NEWID();
-            `)
+                SELECT TOP 10 
+                    T.townName, 
+                    (SELECT COUNT(*) FROM TownMembers TM WHERE TM.townID = T.townID) AS memberCount, 
+                    T.townLogoNum, 
+                    T.townXP, 
+                    T.status
+                FROM Towns T
+                WHERE T.STATUS = 'OPEN' AND (SELECT COUNT(*) FROM TownMembers TM WHERE TM.townID = T.townID) < 25
+                ORDER BY NEWID();
+            `);
             data = resultQuery.recordset;
         } else {
             request.input('townName', sql.VarChar(32), townName)
             let resultQuery = await request.query(`
-            SELECT townName, memberCount, townLogoNum, townXP, status FROM Towns WHERE townName = @townName
-            SELECT TOP 10 * FROM Towns WHERE townName LIKE '%' + @townName + '%' AND townName != @townName
-            `)
+                SELECT 
+                    T.townName, 
+                    (SELECT COUNT(*) FROM TownMembers TM WHERE TM.townID = T.townID) AS memberCount, 
+                    T.townLogoNum, 
+                    T.townXP, 
+                    T.status 
+                FROM Towns T
+                WHERE T.townName = @townName;
+
+                SELECT TOP 10 
+                    T.townName, 
+                    (SELECT COUNT(*) FROM TownMembers TM WHERE TM.townID = T.townID) AS memberCount, 
+                    T.townLogoNum, 
+                    T.townXP, 
+                    T.status 
+                FROM Towns T
+                WHERE T.townName LIKE '%' + @townName + '%' AND T.townName != @townName;
+            `);
+
             data = [...resultQuery.recordsets[0], ...resultQuery.recordsets[1]]
         }
         return {

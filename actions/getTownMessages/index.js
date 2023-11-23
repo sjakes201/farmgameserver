@@ -22,25 +22,59 @@ module.exports = async function (ws, actionData) {
             SELECT TOP 50 
                 TM.content, 
                 TM.timestamp, 
-                TM.messageID, 
+                TM.messageID,
+                TM.Type,
                 CASE 
                     WHEN TM.senderID = 0 THEN 'Server'
                     ELSE L.Username
                 END AS Username
             FROM TownMessages TM
             LEFT JOIN Logins L ON TM.senderID = L.UserID
-            WHERE TM.townID = @TownID
+            WHERE TM.townID = @TownID AND Type != 'TOWN_BROADCAST'
             ORDER BY TM.timestamp DESC;
             
-            SELECT @TownID AS userTownID, @LastSeenMessage as lastSeenMessage
-        `)
+            SELECT TOP 20 
+                TM.content, 
+                TM.timestamp, 
+                TM.messageID,
+                TM.Type,
+                CASE 
+                    WHEN TM.senderID = 0 THEN 'Server'
+                    ELSE L.Username
+                END AS Username
+            FROM TownMessages TM
+            LEFT JOIN Logins L ON TM.senderID = L.UserID
+            WHERE TM.townID = @TownID AND Type = 'TOWN_BROADCAST'
+            ORDER BY TM.timestamp DESC;
 
-        let userTownID = messages.recordsets[1][0].userTownID;
+            SELECT @TownID AS userTownID, @LastSeenMessage as lastSeenMessage
+
+            SELECT TJR.requestTime, TJR.requestID, L.Username 
+            FROM TownJoinRequests TJR 
+            LEFT JOIN Logins L on TJR.UserID = L.UserID
+            WHERE targetTownID = @TownID
+        `)
+        let announcements = messages.recordsets[1]
+
+
+        let result = [...messages.recordsets[0], ...announcements];
+
+        messages.recordsets?.[3]?.forEach(joinReq => {
+            result.unshift({
+                content: `${joinReq.Username} has requested to join the town`,
+                timestamp: joinReq.requestTime,
+                requestID: joinReq.requestID,
+                Type: 'TOWN_JOIN_REQUEST',
+                Username: 'Server'
+            })
+        });
+
+        let userTownID = messages.recordsets[2][0].userTownID;
         if (userTownID) {
             return {
-                messageHistory: messages.recordsets[0],
-                userTownID: messages.recordsets[1][0].userTownID,
-                lastSeenMessage: messages.recordsets[1][0].lastSeenMessage
+                messageHistory: result,
+                userTownID: messages.recordsets[2][0].userTownID,
+                lastSeenMessage: messages.recordsets[2][0].lastSeenMessage
             }
         } else {
             return {

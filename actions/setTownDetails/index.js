@@ -7,7 +7,7 @@ module.exports = async function (ws, actionData) {
 
     let newData = actionData.newData;
 
-    if (typeof newData.description !== 'string' || newData.description.length > 128 || typeof newData.status !== 'string' || !['OPEN', 'CLOSED'].includes(newData.status) || !Number.isInteger(newData.logoNum)) {
+    if (typeof newData.description !== 'string' || newData.description.length > 128 || typeof newData.status !== 'string' || !['OPEN', 'CLOSED', 'INVITE'].includes(newData.status) || !Number.isInteger(newData.logoNum)) {
         return {
             message: `Invalid setTownDetailsInputs`
         };

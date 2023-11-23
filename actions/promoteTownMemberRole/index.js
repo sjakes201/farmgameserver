@@ -59,7 +59,7 @@ module.exports = async function (ws, actionData) {
                 UPDATE TownMembers SET RoleID = 3 WHERE UserID = @UserID
             `)
             await transaction.commit();
-            townServerBroadcast(targetInfo.townID, `${targetUser} has been promoted to leader!`)
+            townServerBroadcast(targetInfo.townID, `${targetUser} has been promoted to leader!`, 'SERVER_NOTIFICATION')
             return {
                 message: "SUCCESS, leader transferred"
             }
@@ -70,7 +70,7 @@ module.exports = async function (ws, actionData) {
             `)
             await transaction.commit();
             const roles = ["member", "elder", "co-leader", "leader"];
-            townServerBroadcast(targetInfo.townID, `${targetUser} has been promoted to ${roles[targetInfo.RoleID]}!`)
+            townServerBroadcast(targetInfo.townID, `${targetUser} has been promoted to ${roles[targetInfo.RoleID]}!`, 'SERVER_NOTIFICATION')
             return {
                 message: "SUCCESS, promoted"
             }

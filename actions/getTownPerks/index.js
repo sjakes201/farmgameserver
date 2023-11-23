@@ -14,7 +14,7 @@ module.exports = async function (ws, actionData) {
         request.input('UserID', sql.Int, UserID);
         let allInfo = await request.query(`
         SELECT 
-            T.townName, TP.cropTimeLevel, TP.animalTimeLevel, TP.partsChanceLevel, TP.orderRefreshLevel, TP.happinessMultiplierLevel
+            TM.roleID, T.townName, TP.cropTimeLevel, TP.animalTimeLevel, TP.partsChanceLevel, TP.orderRefreshLevel, TP.happinessMultiplierLevel
         FROM 
             TownMembers TM
         INNER JOIN 

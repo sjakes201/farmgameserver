@@ -83,7 +83,7 @@ module.exports = async function (ws, actionData) {
             WHERE UserID = @kickedUserID
         `)
         await transaction.commit();
-        townServerBroadcast(yourTownID, `${kickedMember} has been kicked from the town.`)
+        townServerBroadcast(yourTownID, `${kickedMember} has been kicked from the town.`, 'SERVER_NOTIFICATION')
         return {
             message: "SUCCESS"
         }
