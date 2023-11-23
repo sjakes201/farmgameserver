@@ -52,7 +52,12 @@ module.exports = async function (ws, actionData) {
         
         SELECT * FROM TownGoals WHERE townID = @targetTownID
         SELECT townFunds, cropTimeLevel, animalTimeLevel, partsChanceLevel, orderRefreshLevel, happinessMultiplierLevel FROM TownPurchases WHERE townID = @targetTownID
-        `)
+        SELECT 
+        CASE 
+            WHEN EXISTS (SELECT 1 FROM TownJoinRequests WHERE UserID = @UserID AND targetTownID = @targetTownID) THEN 1
+            ELSE 0 -- or any other value or message you want
+        END AS sentJoinRequest;
+            `)
         let myRoleID = moreTownInfo.recordsets[0].filter((obj) => {
             return obj.UserID === UserID
         })?.[0]?.RoleID;
@@ -148,17 +153,16 @@ module.exports = async function (ws, actionData) {
                 memberCount: moreTownInfo.recordsets?.[0]?.length,
                 status: targetTown.status,
                 playersData: playersData,
-                // goalsData: goalsData,
-                // indivGoals: indivGoals,
+                sentJoinRequest: moreTownInfo.recordsets?.[4]?.[0]?.sendJoinRequest,
                 growthPerkLevel: targetTown.growthPerkLevel,
                 partsPerkLevel: targetTown.partsPerkLevel,
                 orderRefreshPerkLevel: targetTown.orderRefreshLevel,
                 animalPerkLevel: targetTown.animalPerkLevel,
-                // Data personal to requester
+                sentJoinRequest: moreTownInfo.recordsets?.[4]?.[0]?.sentJoinRequest,
                 myUnclaimed: myUnclaimed,
                 imInTown: imInTown,
                 townXP: targetTown.townXP,
-                myRoleID: myRoleID
+                myRoleID: myRoleID,
             }
         }
         return {
@@ -179,7 +183,7 @@ module.exports = async function (ws, actionData) {
             myUnclaimed: myUnclaimed,
             imInTown: imInTown,
             townXP: targetTown.townXP,
-            myRoleID: myRoleID
+            myRoleID: myRoleID,
         }
 
     } catch (error) {

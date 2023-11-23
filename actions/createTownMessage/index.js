@@ -6,10 +6,16 @@ module.exports = async function (ws, actionData) {
 
     let UserID = ws.UserID;
     let messageContent = actionData.messageContent;
+    let msgType = actionData.msgType;
 
     if (!(typeof messageContent === "string") || messageContent.length > 512) {
         return {
             message: "Invalid message, must be 512 chars max length string"
+        }
+    }
+    if (!["PLAYER_CHAT", "TOWN_BROADCAST"].includes(msgType)) {
+        return {
+            message: "Invalid msgType"
         }
     }
 
@@ -20,7 +26,21 @@ module.exports = async function (ws, actionData) {
         const request = new sql.Request(connection);
         request.multiple = true;
         request.input('UserID', sql.Int, UserID)
+
+        if (msgType === "TOWN_BROADCAST") {
+            const roleCheckQuery = await request.query(`
+                SELECT roleID FROM TownMembers WHERE UserID = @UserID;
+            `);
+            const roleID = roleCheckQuery.recordset[0]?.roleID;
+            if (![3, 4].includes(roleID)) {
+                return {
+                    message: "Unauthorized to send TOWN_BROADCAST"
+                };
+            }
+        }
+
         request.input('messageContent', sql.NVarChar(512), messageContent)
+        request.input('msgType', sql.NVarChar(32), msgType)
 
         let insertMsgQuery = await request.query(`
         DECLARE @TownID INT
@@ -32,9 +52,9 @@ module.exports = async function (ws, actionData) {
 
         IF @TownID <> -1
         BEGIN
-            INSERT INTO TownMessages (townID, senderID, content)
+            INSERT INTO TownMessages (townID, senderID, content, Type)
             OUTPUT INSERTED.messageID INTO @InsertedIDs
-            VALUES (@TownID, @UserID, @messageContent);
+            VALUES (@TownID, @UserID, @messageContent, @msgType);
             
             SELECT @TownID AS userTownID, ID AS insertedMessageID FROM @InsertedIDs
         END
@@ -49,7 +69,8 @@ module.exports = async function (ws, actionData) {
                 userTownID: userTownID,
                 messageContent: messageContent,
                 username: username,
-                messageID: messageID
+                messageID: messageID,
+                msgType: msgType
             }
         } else {
             return {

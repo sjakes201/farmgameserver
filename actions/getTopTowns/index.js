@@ -8,9 +8,14 @@ module.exports = async function (ws, actionData) {
     try {
         connection = await poolPromise;
         let resultQuery = await connection.query(`
-            SELECT TOP 10 townName, townXP, townLogoNum, status, memberCount
-            FROM Towns
-            ORDER BY townXP DESC;
+            SELECT TOP 10 
+                T.townName, 
+                T.townXP, 
+                T.townLogoNum, 
+                T.status, 
+                (SELECT COUNT(*) FROM TownMembers TM WHERE TM.townID = T.townID) AS memberCount
+            FROM Towns T
+            ORDER BY T.townXP DESC;
             `)
         let data = resultQuery.recordset;
 

@@ -5,7 +5,7 @@ const sql = require('mssql');
 const { poolPromise } = require('./db');
 
 
-const broadcastToTown = async (townID, message, username, messageID) => {
+const broadcastToTown = async (townID, message, username, messageID, msgType, requestID) => {
     const wss = getWebSocket();
     try {
         wss.clients.forEach(client => {
@@ -16,7 +16,9 @@ const broadcastToTown = async (townID, message, username, messageID) => {
                         content: message,
                         timestamp: Date.now(),
                         username: username,
-                        messageID: messageID
+                        messageID: messageID,
+                        requestID: requestID,
+                        Type: msgType
                     }
                 }))
             }
@@ -26,8 +28,7 @@ const broadcastToTown = async (townID, message, username, messageID) => {
     }
 }
 
-
-const townServerBroadcast = async (townID, messageContent) => {
+const townServerBroadcast = async (townID, messageContent, msgType) => {
     try {
         let connection = await poolPromise;
 
@@ -35,16 +36,17 @@ const townServerBroadcast = async (townID, messageContent) => {
         msgRequest.input('townID', sql.Int, townID)
         msgRequest.input('senderID', sql.Int, 0)
         msgRequest.input('messageContent', sql.NVarChar(512), messageContent)
+        msgRequest.input('msgType', sql.NVarChar(32), msgType)
         let createBroadcast = await msgRequest.query(`
                 DECLARE @InsertedIDs TABLE (ID INT);
                 
-                INSERT INTO TownMessages (townID, senderID, content)
+                INSERT INTO TownMessages (townID, senderID, content, Type)
                 OUTPUT INSERTED.messageID INTO @InsertedIDs
-                VALUES (@townID, @senderID, @messageContent);
+                VALUES (@townID, @senderID, @messageContent, @msgType);
                 
                 SELECT ID AS insertedMessageID FROM @InsertedIDs
             `)
-        broadcastToTown(townID, messageContent, 'Server', createBroadcast.recordset[0].insertedMessageID)
+        broadcastToTown(townID, messageContent, 'Server', createBroadcast.recordset[0].insertedMessageID, msgType, null)
     } catch (error) {
         console.log(error)
     }
@@ -71,7 +73,7 @@ const sendTownUsersData = async (townID, dataType, data) => {
     const wss = getWebSocket();
     try {
         wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN && client.UserID === UserID) {
+            if (client.readyState === WebSocket.OPEN && client.townID === townID) {
                 let clientTownID = client?.townID;
                 if (clientTownID === townID) {
                     client.send(JSON.stringify({

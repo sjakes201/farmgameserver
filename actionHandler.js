@@ -235,11 +235,13 @@ const handleAction = async (ws, action, params) => {
                 break;
             case 'createTownMessage':
                 let msgData = await actions.createTownMessage(ws, params)
+                console.log(msgData)
                 let userTownID = msgData.userTownID;
                 let username = msgData.username;
                 let messageID = msgData.messageID;
+                let msgType = msgData.msgType;
                 if (userTownID > 0 && msgData.messageContent && username && messageID) {
-                    broadcastToTown(userTownID, msgData.messageContent, username, messageID)
+                    broadcastToTown(userTownID, msgData.messageContent, username, messageID, msgType)
                 }
                 delete msgData.userTownID;
                 ws.send(JSON.stringify({ action: 'createTownMessage', body: msgData }));
@@ -299,6 +301,10 @@ const handleAction = async (ws, action, params) => {
             case 'acceptNotification':
                 let antfData = await actions.acceptNotification(ws, params)
                 ws.send(JSON.stringify({ action: 'acceptNotification', body: antfData }));
+                break;
+            case 'resolveJoinRequest':
+                let rjrData = await actions.resolveJoinRequest(ws, params)
+                ws.send(JSON.stringify({ action: 'resolveJoinRequest', body: rjrData }));
                 break;
         }
     } catch (error) {

@@ -2,6 +2,7 @@ const { decodeUserID } = require('./utils');
 const tempAuth = require('./actions/tempAuth/index');
 const { handleAction } = require('./actionHandler');
 const logUserIP = require('./serverActions/logUserIP/index');
+const checkIPInfo = require('./serverActions/checkIPInfo/index');
 const url = require('url');
 
 let connectedUsers = [];
@@ -9,6 +10,15 @@ let connectedUsers = [];
 function setupWebSocket(wss) {
     wss.on('connection', async (ws, req) => {
         try {
+            const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            let ipv4 = clientIp.split(":")[0];
+            const banned = await checkIPInfo(ipv4);
+            if (banned) {
+                console.log(`Banned IP ${clientIp} attempted to connect`);
+                ws.close(4001, 'Banned IP'); 
+                return;
+            }
+
             const parameters = url.parse(req.url, true);
             const token = parameters.query.token;
 
@@ -38,8 +48,6 @@ function setupWebSocket(wss) {
             }
 
             try {
-                const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-                const ipv4 = clientIp.split(":")[0];
                 logUserIP(ws.UserID, ipv4);
             } catch (error) {
                 console.log(error);

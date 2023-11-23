@@ -23,10 +23,12 @@ module.exports = async function () {
         `)
         if (reset.rowsAffected[0] === 0) {
             await transaction.rollback();
+            console.log("Error resetting temp leaderboard");
             return;
         }
 
         await transaction.commit();
+        console.log("Successfully reset temp leaderboard")
     } catch (error) {
         if (transaction) await transaction.rollback()
         console.log(error);

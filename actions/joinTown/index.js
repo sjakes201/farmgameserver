@@ -1,7 +1,7 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const TOWNINFO = require('../shared/TOWNINFO');
-const { townServerBroadcast } = require('../../broadcastFunctions')
+const { townServerBroadcast, broadcastToTown } = require('../../broadcastFunctions')
 const { giveUnlockID } = require('../../unlockFunctions')
 
 module.exports = async function (ws, actionData) {
@@ -44,47 +44,75 @@ module.exports = async function (ws, actionData) {
         request.input(`UserID`, sql.Int, UserID);
         request.input(`townID`, sql.Int, townID);
 
-        // Check for opening (SQL +Towns)
+        // Check for opening (SQL +-Towns +TownMembers)
         request.multiple = true;
         let openTown = await request.query(`
             SELECT status FROM Towns WHERE townID = @townID
             SELECT COUNT(*) AS memberCount FROM TownMembers WHERE townID = @townID
         `)
         let memberCount = openTown.recordsets[1][0].memberCount;
-        if(!Number.isInteger(memberCount)) {
+        if (!Number.isInteger(memberCount)) {
             await transaction.rollback();
             return {
                 message: `Error getting town member count`
             };
         }
-        if (memberCount + 1 > TOWNINFO.VALUES.townMemberLimit || openTown.recordset[0].status !== 'OPEN') {
-            await transaction.rollback();
+        if (memberCount < TOWNINFO.VALUES.townMemberLimit && openTown.recordset[0].status === 'INVITE') {
+            // SQL -TownsMembers +TownJoinRequests
+            let changeTownQuery = await request.query(`
+                SELECT townID FROM TownMembers WHERE UserID = @UserID;
+
+                INSERT INTO TownJoinRequests (UserID, targetTownID)
+                OUTPUT INSERTED.requestID
+                VALUES (@UserID, @townID);
+            `);
+            const insertedRequestID = changeTownQuery.recordsets[1][0].requestID;
+
+            if (changeTownQuery.recordset.length !== 0) {
+                await transaction.rollback();
+                return {
+                    message: "Already in a town, leave before joining a new one"
+                };
+            }
+
+            await transaction.commit();
+            broadcastToTown(townID, `${username} has requested to join the town.`, 'Server', null, 'TOWN_JOIN_REQUEST', insertedRequestID)
+
             return {
-                message: `Town at capacity or closed to new members`
-            };
+                success: true,
+                message: "SUCCESS"
+            }
         }
 
-        // Check for existing town membership and set to new (SQL -Towns +-TownMembers +TownContributions)
-        // 1 is role id for member
-        let changeTownQuery = await request.query(`
-         SELECT townID FROM TownMembers WHERE UserID = @UserID
-         INSERT INTO TownMembers (UserID, RoleID, townID) VALUES (@UserID, 1, @townID)
-         UPDATE TownContributions SET townID = @townID WHERE UserID = @UserID
-         `)
-        if (changeTownQuery.recordset.length !== 0) {
-            await transaction.rollback();
+        if (memberCount < TOWNINFO.VALUES.townMemberLimit && openTown.recordset[0].status === 'OPEN') {
+            // Check for existing town membership and set to new (SQL -Towns +-TownMembers +TownContributions)
+            // 1 is role id for member
+            let changeTownQuery = await request.query(`
+                SELECT townID FROM TownMembers WHERE UserID = @UserID
+                INSERT INTO TownMembers (UserID, RoleID, townID) VALUES (@UserID, 1, @townID)
+                UPDATE TownContributions SET townID = @townID WHERE UserID = @UserID
+            `)
+            if (changeTownQuery.recordset.length !== 0) {
+                await transaction.rollback();
+                return {
+                    message: "Already in a town, leave before joining a new one"
+                };
+            }
+
+            await transaction.commit();
+            townServerBroadcast(townID, `${username} has joined the town!`, 'SERVER_NOTIFICATION')
+            giveUnlockID(UserID, 9);
             return {
-                message: "Already in a town, leave before joining a new one"
-            };
+                success: true,
+                message: "SUCCESS"
+            }
         }
 
-        await transaction.commit();
-        townServerBroadcast(townID, `${username} has joined the town!`)
-        giveUnlockID(UserID, 9);
-
+        await transaction.rollback();
         return {
-            message: "SUCCESS"
-        }
+            message: `Town at capacity or closed to new members`
+        };
+
     } catch (error) {
         console.log(error);
         if (transaction) await transaction.rollback()

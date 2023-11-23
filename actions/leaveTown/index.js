@@ -76,7 +76,7 @@ module.exports = async function (ws, actionData) {
             WHERE UserID = @UserID
         `)
         await transaction.commit();
-        townServerBroadcast(myTownID, `${username} has left the town.`)
+        townServerBroadcast(myTownID, `${username} has left the town.`, 'SERVER_NOTIFICATION')
 
         if (myRoleID === 4 && numMembers === 1) {
             // They are the last person. Delete the town (outside transaction)

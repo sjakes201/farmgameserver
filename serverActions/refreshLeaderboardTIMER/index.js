@@ -3,10 +3,10 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db');
 
 module.exports = async function (leaderboardCycle) {
-    if (process.env.NODE_ENV === 'TESTING') {
-        console.log("TESTING ENV, NOT RUNNING")
-        return;
-    }
+    // if (process.env.NODE_ENV === 'TESTING') {
+    //     console.log("TESTING ENV, NOT RUNNING")
+    //     return;
+    // }
     /*
     Will sort all leaderboards 
     Leaderboard is total, so based on Profiles data

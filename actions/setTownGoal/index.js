@@ -61,7 +61,8 @@ module.exports = async function (ws, actionData) {
             UPDATE TownGoals SET goal_${goalSlot} = '${newGoal} ${goalQuantity}', progress_${goalSlot} = 0 WHERE townID = @townID
             UPDATE TownContributions SET progress_${goalSlot} = 0 WHERE townID = @townID
         `)
-        townServerBroadcast(yourTownID, `${yourUsername} has set a new town goal: ${CONSTANTS.InventoryDescriptions[newGoal][0]} ${parseInt(goalQuantity).toLocaleString()}`)
+        
+        townServerBroadcast(yourTownID, `${yourUsername} has set a new town goal: ${CONSTANTS.InventoryDescriptions[newGoal][0]} ${parseInt(goalQuantity).toLocaleString()}`, 'SERVER_NOTIFICATION')
 
         return {
             message: "SUCCESS"
