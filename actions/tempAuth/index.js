@@ -22,8 +22,8 @@ module.exports = async function (ws, actionData) {
         await transaction.begin();
         const request = new sql.Request(transaction);
 
-        // Generate random Username "GUESTUSER" + a random number, check DB, redo until one's available
-        let randomUser = `Guest#`;
+        // Generate random Username "Farmer-" + a random number, check DB, redo until one's available
+        let randomUser = `Farmer-`;
         let valid = false;
         while (!valid) {
             let randomHex = (Math.floor(Math.random() * 0xFFFFFFFF).toString(16)).padStart(8, '0').toUpperCase();
@@ -33,7 +33,7 @@ module.exports = async function (ws, actionData) {
             if (isTaken.recordset.length > 0) {
                 // not unique username
                 // guest users have #, a character not permitted in regular usernames
-                randomUser = `Guest#`
+                randomUser = `Farmer-`
             } else {
                 // unique user
                 valid = true;
