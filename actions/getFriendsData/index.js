@@ -9,6 +9,7 @@ module.exports = async function (ws, actionData) {
     try {
         connection = await poolPromise;
         let request = new sql.Request(connection);
+        request.multiple = true;
         request.input('UserID', sql.Int, UserID)
 
         let friendsData = await request.query(`
@@ -47,7 +48,22 @@ module.exports = async function (ws, actionData) {
             Profiles RP ON F.receiverUserID = RP.UserID
         WHERE 
             ((F.receiverUserID = @UserID) OR (F.senderUserID = @UserID AND F.acceptedFlag = 1)) AND (F.acceptedFlag != 2);
+
+        SELECT 
+            F.sendTime,
+            F.acceptedFlag,
+            L.Username as friendUsername,
+            P.profilePic AS friendProfilePic,
+            'OUTGOING' AS status
+        FROM
+            Friends F
+        LEFT JOIN
+            Logins L ON F.receiverUserID = L.UserID
+        LEFT JOIN
+            Profiles P ON F.receiverUserID = P.UserID
+        WHERE senderUserID = @UserID AND acceptedFlag = 0;
         `)
+
         let resultingData = friendsData.recordsets[0].map((friend) => {
             let friendInfo = { ...friend }
             delete friendInfo.friendLastSeen;
@@ -75,7 +91,8 @@ module.exports = async function (ws, actionData) {
 
         return {
             success: true,
-            friendsData: resultingData
+            friendsData: resultingData,
+            outgoingRequests: friendsData.recordsets[1]
         }
 
     } catch (error) {

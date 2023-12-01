@@ -235,7 +235,6 @@ const handleAction = async (ws, action, params) => {
                 break;
             case 'createTownMessage':
                 let msgData = await actions.createTownMessage(ws, params)
-                console.log(msgData)
                 let userTownID = msgData.userTownID;
                 let username = msgData.username;
                 let messageID = msgData.messageID;
