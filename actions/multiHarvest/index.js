@@ -9,6 +9,19 @@ const { poolPromise } = require('../../db');
 
 const townGoalContribute = require(`../shared/townGoalContribute`);
 
+const getCurrentSeason = () => {
+    const seasons = ['spring', 'summer', 'fall', 'winter'];
+    const currentDate = new Date();
+    const epochStart = new Date(1970, 0, 1);
+    const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+    let totalDays = Math.floor((currentDate - epochStart) / millisecondsPerDay);
+
+    const currentSeasonIndex = totalDays % seasons.length;
+
+    return seasons[currentSeasonIndex];
+}
+
 module.exports = async function (ws, actionData) {
 
     const UserID = ws.UserID;
@@ -115,7 +128,7 @@ module.exports = async function (ws, actionData) {
             // check if fertilized
             if (tile.TimeFertilizer !== -1) {
                 // if fertilizer exists
-                secsNeeded /= 2;
+                secsPassed *= 2;
                 let fertilizedTime = tile.TimeFertilizer;
                 if (curTime - fertilizedTime < CONSTANTS.VALUES.TimeFeritilizeDuration) {
                     // fertilizer did not expire
@@ -125,8 +138,14 @@ module.exports = async function (ws, actionData) {
             }
             if (townPerks?.cropTimeLevel > 0) {
                 let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
-                let boostChange = 1 - boostPercent;
-                secsNeeded *= boostChange;
+                let boostChange = 1 + boostPercent;
+                secsPassed *= boostChange;
+            }
+
+            let seedName = CONSTANTS.ProduceNameFromID[cropID];
+            if (CONSTANTS?.cropSeasons?.[getCurrentSeason()]?.includes(seedName)) {
+                let boostPercent = CONSTANTS.VALUES.SEASON_GROWTH_BUFF;
+                secsPassed *= (1 + boostPercent);
             }
 
             if (secsPassed >= secsNeeded) {
@@ -180,8 +199,13 @@ module.exports = async function (ws, actionData) {
 
                     if (townPerks?.cropTimeLevel > 0) {
                         let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
-                        let boostChange = 1 - boostPercent;
-                        timeSkip *= boostChange;
+                        let boostChange = 1 + boostPercent;
+                        timeSkip /= boostChange;
+                    }
+
+                    if (CONSTANTS?.cropSeasons?.[getCurrentSeason()]?.includes(seedName)) {
+                        let boostPercent = CONSTANTS.VALUES.SEASON_GROWTH_BUFF;
+                        timeSkip /= (1 + boostPercent);
                     }
 
                     let adjustedPlantTime = Date.now() - timeSkip - 200;
@@ -239,6 +263,11 @@ module.exports = async function (ws, actionData) {
                     let boostChange = 1 + boostPercent;
                     chance *= boostChange;
                 }
+
+                if (getCurrentSeason() === 'winter') {
+                    chance *= 1 + CONSTANTS.VALUES.WINTER_PARTS_BUFF
+                }
+
 
                 let randomPart = null;
                 if (randChance <= chance) {

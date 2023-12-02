@@ -7,6 +7,19 @@ const townGoalContribute = require(`../shared/townGoalContribute`);
 const TOWNINFO = require('../shared/TOWNINFO');
 const TOWNSHOP = require('../shared/TOWNSHOP')
 
+const getCurrentSeason = () => {
+    const seasons = ['spring', 'summer', 'fall', 'winter'];
+    const currentDate = new Date();
+    const epochStart = new Date(1970, 0, 1);
+    const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+    let totalDays = Math.floor((currentDate - epochStart) / millisecondsPerDay);
+
+    const currentSeasonIndex = totalDays % seasons.length;
+
+    return seasons[currentSeasonIndex];
+}
+
 module.exports = async function (ws, actionData) {
 
     // GET REQ DATA
@@ -67,8 +80,10 @@ module.exports = async function (ws, actionData) {
             };
         }
 
+        let animalType = animalInfo.recordset[0].Animal_type;
+
         // Find out if animal is unlocked based on upgraeds
-        if (CONSTANTS.Permits.exoticAnimals.includes(animalInfo.recordset[0].Animal_type) && !upgrades.exoticPermit) {
+        if (CONSTANTS.Permits.exoticAnimals.includes(animalType) && !upgrades.exoticPermit) {
             await transaction.rollback();
             return {
                 message: "NEED PERMIT"
@@ -77,7 +92,7 @@ module.exports = async function (ws, actionData) {
 
 
         // Get time needed info based on upgrades
-        let location = CONSTANTS.AnimalTypes[animalInfo.recordset[0].Animal_type][0]
+        let location = CONSTANTS.AnimalTypes[animalType][0]
         let collectUGLevel = 0;
         let quantityUGLevel = 0;
         switch (location) {
@@ -95,29 +110,39 @@ module.exports = async function (ws, actionData) {
 
         // Check how much time has passed since last produce
         let last_produce = animalInfo.recordset[0].Last_produce;
-        let timeNeeded = UPGRADES[collectTableName][animalInfo.recordset[0].Animal_type][0]
-
-        if (townPerks?.animalTimeLevel > 0) {
-            let boostPercent = TOWNSHOP.perkBoosts.animalTimeLevel[townPerks.animalTimeLevel-1];
-            let boostChange = 1 - boostPercent;
-            timeNeeded *= boostChange;
-        }
-
+        let timeNeeded = UPGRADES[collectTableName][animalType][0]
 
         const curTime = Date.now();
         let secsPassed = (curTime - last_produce) / 1000;
         // buffer for less 400's
         secsPassed += 0.50;
 
+        if (townPerks?.animalTimeLevel > 0) {
+            let boostPercent = TOWNSHOP.perkBoosts.animalTimeLevel[townPerks.animalTimeLevel - 1];
+            let boostChange = 1 + boostPercent;
+            secsPassed *= boostChange;
+        }
+        
+        let inSeason = CONSTANTS.animalSeasons[getCurrentSeason()].includes(animalType);
+        if (inSeason) {
+            let boostPercent = CONSTANTS.VALUES.SEASON_ANIMAL_BUFF;
+            let boostChange = 1 + boostPercent;
+            secsPassed *= boostChange;
+        }
+
+
         if (secsPassed >= timeNeeded) {
             // Enough time has passed
-            let [produce, qty] = UPGRADES[quantityTableName][animalInfo.recordset[0].Animal_type];
+            let [produce, qty] = UPGRADES[quantityTableName][animalType];
             request.input('curTime', sql.Decimal, curTime);
             request.input('xp', sql.Int, CONSTANTS.XP[produce])
 
             // Random probability of extra qty? At max happiness, 50% chance of extra produce
             let happiness = animalInfo.recordset[0].Happiness, nextRandom = animalInfo.recordset[0].Next_random;
             let probOfExtra = happiness > 1 ? 0.67 : happiness / 1.5;
+            if(inSeason) {
+                probOfExtra += 0.1
+            }
             if (nextRandom < probOfExtra) {
                 // extra produce bc of happiness
                 qty += 1;

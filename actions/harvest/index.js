@@ -7,6 +7,19 @@ const townGoalContribute = require(`../shared/townGoalContribute`);
 const TOWNINFO = require('../shared/TOWNINFO');
 const TOWNSHOP = require('../shared/TOWNSHOP')
 
+const getCurrentSeason = () => {
+    const seasons = ['spring', 'summer', 'fall', 'winter'];
+    const currentDate = new Date();
+    const epochStart = new Date(1970, 0, 1);
+    const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+    let totalDays = Math.floor((currentDate - epochStart) / millisecondsPerDay);
+
+    const currentSeasonIndex = totalDays % seasons.length;
+
+    return seasons[currentSeasonIndex];
+}
+
 module.exports = async function (ws, actionData) {
     // GET USERID
     const UserID = ws.UserID;
@@ -93,8 +106,14 @@ module.exports = async function (ws, actionData) {
         // Reduce secsNeeded based on town's growth perk level
         if (townPerks?.cropTimeLevel > 0) {
             let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
-            let boostChange = 1 - boostPercent;
-            secsNeeded *= boostChange;
+            let boostChange = 1 + boostPercent;
+            secsPassed *= boostChange;
+        }
+
+        let seedName = CONSTANTS.ProduceNameFromID[cropID];
+        if (CONSTANTS?.cropSeasons?.[getCurrentSeason()]?.includes(seedName)) {
+            let boostPercent = CONSTANTS.VALUES.SEASON_GROWTH_BUFF;
+            secsPassed *= (1 + boostPercent);
         }
 
         // If a crop ends it's time fertilized period, instead of going backwards in progress, it will have one remaining harvest be bonus time, then set time fertilizer to -1
@@ -103,7 +122,7 @@ module.exports = async function (ws, actionData) {
         // check if fertilized
         if (tilecontents.recordset[0].TimeFertilizer !== -1) {
             // if fertilizer exists
-            secsNeeded /= 2;
+            secsPassed *= 2;
             let fertilizedTime = tilecontents.recordset[0].TimeFertilizer;
             if (curTime - fertilizedTime < CONSTANTS.VALUES.TimeFeritilizeDuration) {
                 // fertilizer did not expire
@@ -168,11 +187,18 @@ module.exports = async function (ws, actionData) {
                     // active time fertilizer that has not expired
                     timeSkip /= 2;
                 }
+
                 if (townPerks?.cropTimeLevel > 0) {
                     let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
-                    let boostChange = 1 - boostPercent;
-                    timeSkip *= boostChange;
+                    let boostChange = 1 + boostPercent;
+                    timeSkip /= boostChange;
                 }
+
+                if (CONSTANTS?.cropSeasons?.[getCurrentSeason()]?.includes(seedName)) {
+                    let boostPercent = CONSTANTS.VALUES.SEASON_GROWTH_BUFF;
+                    timeSkip /= (1 + boostPercent);
+                }
+                
                 let adjustedPlantTime = Date.now() - timeSkip - 200;
                 request.input('adjustedPlantTime', sql.Decimal, adjustedPlantTime);
                 let result;

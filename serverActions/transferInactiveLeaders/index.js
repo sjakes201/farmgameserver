@@ -54,7 +54,7 @@ module.exports = async function () {
                     END
                 COMMIT
                 `);
-                townServerBroadcast(townID, `The town's leader has been inactive for 2 weeks and leadership has been transferred to ${newLeaderUsername}.`)
+                townServerBroadcast(townID, `The town's leader has been inactive for 2 weeks and leadership has been transferred to ${newLeaderUsername}.`, "TOWN_BROADCAST")
 
             }
         }
