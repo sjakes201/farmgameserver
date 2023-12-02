@@ -74,10 +74,12 @@ function setupWebSocket(wss) {
                     const parsedMessage = JSON.parse(message);
 
                     const action = parsedMessage.action;
+                    const MESSAGE_ID = parsedMessage.MESSAGE_ID;
                     const params = { ...parsedMessage }
                     delete params.action;
+                    delete params.MESSAGE_ID;
 
-                    handleAction(ws, action, params)
+                    handleAction(ws, MESSAGE_ID, action, params)
 
                 } catch (error) {
                     console.log(error)
