@@ -198,7 +198,7 @@ module.exports = async function (ws, actionData) {
                     let boostPercent = CONSTANTS.VALUES.SEASON_GROWTH_BUFF;
                     timeSkip /= (1 + boostPercent);
                 }
-                
+
                 let adjustedPlantTime = Date.now() - timeSkip - 200;
                 request.input('adjustedPlantTime', sql.Decimal, adjustedPlantTime);
                 let result;
@@ -261,6 +261,11 @@ module.exports = async function (ws, actionData) {
                 let boostChange = 1 + boostPercent;
                 chance *= boostChange;
             }
+            
+            if (getCurrentSeason() === 'winter') {
+                chance *= 1 + CONSTANTS.VALUES.WINTER_PARTS_BUFF
+            }
+
             if (randChance <= chance) {
                 // get a random machine part
                 let whichPartChance = Math.random();

@@ -94,7 +94,14 @@ module.exports = async function () {
 
 
         // CLEAR MARKET_VOLUME
-        let clear_market_vol_query = `UPDATE MARKET_VOLUME SET carrot = 0, melon = 0, cauliflower = 0, pumpkin = 0, yam = 0, beet = 0, parsnip = 0, bamboo = 0, hops = 0, corn = 0, potato = 0, blueberry = 0, grape = 0, oats = 0, strawberry = 0, chicken_egg = 0, cow_milk = 0, duck_egg = 0, quail_egg = 0, yak_milk = 0, sheep_wool = 0, goat_milk = 0, ostrich_egg = 0, llama_wool = 0, kiwi_egg = 0`;
+        let clear_market_vol_query = `
+        UPDATE MARKET_VOLUME SET 
+        carrot = 0, melon = 0, cauliflower = 0, pumpkin = 0, yam = 0, beet = 0, parsnip = 0, 
+        bamboo = 0, hops = 0, corn = 0, potato = 0, blueberry = 0, grape = 0, oats = 0, strawberry = 0, 
+        chicken_egg = 0, cow_milk = 0, duck_egg = 0, quail_egg = 0, yak_milk = 0, sheep_wool = 0, goat_milk = 0, 
+        ostrich_egg = 0, llama_wool = 0, kiwi_egg = 0
+        
+        `;
 
         // Update prices (SQL +Market)
         await request.query(update_price_query);

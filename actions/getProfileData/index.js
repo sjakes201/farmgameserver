@@ -35,6 +35,7 @@ module.exports = async function (ws, actionData) {
             SELECT Username FROM Logins WHERE UserID = @targetUserID;
             ${selfRequest ? `SELECT * FROM AnimalManagement WHERE UserID = @targetUserID;` : ``}
             SELECT Balance, XP, receivedPokes, totalContributedTownXP, profilePic FROM Profiles WHERE UserID = @targetUserID;
+            ${!selfRequest ? `SELECT lastPoke FROM Profiles WHERE UserID = @UserID;` : ``}
             SELECT townName FROM Towns WHERE townID = (SELECT townID FROM TownMembers WHERE UserID = @targetUserID);
             ${selfRequest ? `SELECT * FROM Upgrades WHERE UserID = @targetUserID;` : ``}
             SELECT *, 'AllTime' AS leaderboardPositionsType FROM Leaderboard WHERE UserID = @targetUserID;
