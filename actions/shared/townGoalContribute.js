@@ -165,7 +165,7 @@ module.exports = async function (UserID, contributedGood, contributedQuantity) {
                     UPDATE TownContributions SET progress_${goalNum} = 0 WHERE UserID IN ${userWhere}
                     `)
                     await transaction.commit();
-                    // townServerBroadcast(townID, `Town has completed goal ${CONSTANTS.InventoryDescriptions[goalGood][0]} ${parseInt(quantityNeeded).toLocaleString()}!`, 'GOAL_COMPLETE')
+                    townServerBroadcast(townID, `Town has completed goal ${CONSTANTS.InventoryDescriptions[goalGood][0]} ${parseInt(quantityNeeded).toLocaleString()}!`, 'GOAL_COMPLETE')
 
                     inTransaction = false;
                     goalMatch = true;

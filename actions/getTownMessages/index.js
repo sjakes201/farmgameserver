@@ -30,9 +30,9 @@ module.exports = async function (ws, actionData) {
                 END AS Username
             FROM TownMessages TM
             LEFT JOIN Logins L ON TM.senderID = L.UserID
-            WHERE TM.townID = @TownID AND Type != 'TOWN_BROADCAST'
+            WHERE TM.townID = @TownID AND Type != 'TOWN_BROADCAST' AND Type != 'GOAL_COMPLETE'
             ORDER BY TM.timestamp DESC;
-            
+
             SELECT TOP 20 
                 TM.content, 
                 TM.timestamp, 
@@ -53,11 +53,21 @@ module.exports = async function (ws, actionData) {
             FROM TownJoinRequests TJR 
             LEFT JOIN Logins L on TJR.UserID = L.UserID
             WHERE targetTownID = @TownID
+
+            SELECT TOP 1 
+                TM.content, 
+                TM.timestamp, 
+                TM.messageID,
+                TM.Type,
+                'Server' AS Username
+            FROM TownMessages TM
+            WHERE TM.townID = @TownID AND Type = 'GOAL_COMPLETE'
+            ORDER BY TM.timestamp DESC;
         `)
         let announcements = messages.recordsets[1]
+        let goalComplete = messages.recordsets[4]
 
-
-        let result = [...messages.recordsets[0], ...announcements];
+        let result = [...messages.recordsets[0], ...announcements, ...goalComplete];
 
         messages.recordsets?.[3]?.forEach(joinReq => {
             result.unshift({
