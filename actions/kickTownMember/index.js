@@ -70,10 +70,8 @@ module.exports = async function (ws, actionData) {
             };
         }
         request.input('yourTownID', sql.Int, yourTownID)
-        // Decrement member count, and reset the kicked user's town contributions (SQL -Logins +-Towns +-TownMembers +TownContributions)
-        let updateTownQuery = await request.query(`
-            UPDATE Towns SET memberCount = memberCount - 1 WHERE townID = @yourTownID
-            
+        // Decrement member count, and reset the kicked user's town contributions (SQL -Logins +-TownMembers +TownContributions)
+        let updateTownQuery = await request.query(`          
             DELETE FROM TownMembers WHERE UserID = @kickedUserID
 
             UPDATE TownContributions SET 

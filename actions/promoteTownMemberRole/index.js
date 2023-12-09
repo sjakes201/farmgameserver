@@ -3,7 +3,6 @@ const { poolPromise } = require('../../db');
 const { townServerBroadcast } = require('../../broadcastFunctions')
 
 module.exports = async function (ws, actionData) {
-    // Currently only promotes to leader as there are no intermediary roles
 
     const UserID = ws.UserID;
     let targetUser = actionData.targetUser;

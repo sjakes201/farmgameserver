@@ -33,9 +33,9 @@ module.exports = async function (ws, actionData) {
         try {
             // Create the town without UserID to get the next townID, DOES NOT OBEY SQL ACCESS ORDER STANDARDS NEED TO FIX
             let claimTownID = await request.query(`
-                INSERT INTO Towns (townName, townDescription, memberCount) 
+                INSERT INTO Towns (townName, townDescription) 
                 OUTPUT INSERTED.townID
-                VALUES (@townName, @defaultDescription, 1) 
+                VALUES (@townName, @defaultDescription) 
             `)
             let generatedTownID = claimTownID.recordset[0].townID;
             request.input('townID', sql.Int, generatedTownID)
