@@ -4,6 +4,7 @@ const { handleAction } = require('./actionHandler');
 const logUserIP = require('./serverActions/logUserIP/index');
 const checkIPInfo = require('./serverActions/checkIPInfo/index');
 const url = require('url');
+const { checkMessageRateLimit } = require('./messageLimitChecker');
 
 let connectedUsers = [];
 
@@ -13,9 +14,10 @@ function setupWebSocket(wss) {
             const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
             let ipv4 = clientIp.split(":")[0];
             const banned = await checkIPInfo(ipv4);
+
             if (banned) {
                 console.log(`Banned IP ${clientIp} attempted to connect`);
-                ws.close(4001, 'Banned IP'); 
+                ws.close(4001, 'Banned IP');
                 return;
             }
 
@@ -26,7 +28,7 @@ function setupWebSocket(wss) {
             if (userData.auth) {
                 ws.UserID = userData.UserID;
             } else {
-                let guestInfo = await tempAuth(ws)
+                let guestInfo = await tempAuth(ws, { "ipv4": ipv4 })
                 if (guestInfo.auth && guestInfo.token) {
                     userData = decodeUserID(guestInfo.token);
                     if (userData.auth) {
@@ -70,6 +72,11 @@ function setupWebSocket(wss) {
                 try {
                     let user = connectedUsers.find(u => u.UserID === ws.UserID);
                     if (user) user.lastActive = Date.now()
+
+                    if(checkMessageRateLimit(user.UserID)) {
+                        ws.close(1008, "Server message rate limit")
+                        return
+                    }
 
                     const parsedMessage = JSON.parse(message);
 
