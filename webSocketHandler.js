@@ -49,12 +49,12 @@ function setupWebSocket(wss) {
                 }
             }
 
+
             try {
                 logUserIP(ws.UserID, ipv4);
             } catch (error) {
                 console.log(error);
             }
-
 
             if (connectedUsers.every((obj) => obj.UserID !== ws.UserID)) {
                 console.log(`Client UserID ${ws.UserID} connected`);

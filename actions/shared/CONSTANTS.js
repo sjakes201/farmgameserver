@@ -142,10 +142,10 @@ module.exports = {
     // [ display name , more details ]
     InventoryDescriptions: {
         carrot_seeds: ["Carrot Seeds", "High yield, medium growth time"],
-        melon_seeds: ["Melon Seeds", "Low yield, very long growth time"],
+        melon_seeds: ["Melon Seeds", "Low yield, long growth time"],
         corn_seeds: ["Corn Seeds", "Medium yield, medium growth time"],
         cauliflower_seeds: ["Cauliflower Seeds", "Low yield, long growth time"],
-        pumpkin_seeds: ["Pumpkin Seeds", "Low yield, very long growth time"],
+        pumpkin_seeds: ["Pumpkin Seeds", "Low yield, long growth time"],
         yam_seeds: ["Yam Seeds", "Medium yield, medium growth time"],
         beet_seeds: ["Beet Seeds", "Medium yield, medium growth time"],
         parsnip_seeds: ["Parsnip Seeds", "Medium yield, medium growth time"],
@@ -196,10 +196,10 @@ module.exports = {
     },
     InventoryDescriptionsPlural: {
         carrot_seeds: ["Carrot Seeds", "High yield, medium growth time"],
-        melon_seeds: ["Melon Seeds", "Low yield, very long growth time"],
+        melon_seeds: ["Melon Seeds", "Low yield, long growth time"],
         corn_seeds: ["Corn Seeds", "Medium yield, medium growth time"],
         cauliflower_seeds: ["Cauliflower Seeds", "Low yield, long growth time"],
-        pumpkin_seeds: ["Pumpkin Seeds", "Low yield, very long growth time"],
+        pumpkin_seeds: ["Pumpkin Seeds", "Low yield, long growth time"],
         yam_seeds: ["Yam Seeds", "Medium yield, medium growth time"],
         beet_seeds: ["Beet Seeds", "Medium yield, medium growth time"],
         parsnip_seeds: ["Parsnip Seeds", "Medium yield, medium growth time"],
