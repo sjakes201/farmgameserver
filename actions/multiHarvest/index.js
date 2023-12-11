@@ -11,16 +11,17 @@ const townGoalContribute = require(`../shared/townGoalContribute`);
 
 const getCurrentSeason = () => {
     const seasons = ['spring', 'summer', 'fall', 'winter'];
-    const currentDate = new Date();
-    const epochStart = new Date(1970, 0, 1);
+    const currentDateUTC = new Date(Date.now());
+    currentDateUTC.setMinutes(currentDateUTC.getMinutes() + currentDateUTC.getTimezoneOffset());
+
+    const epochStart = new Date(Date.UTC(1970, 0, 1));
     const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
-    let totalDays = Math.floor((currentDate - epochStart) / millisecondsPerDay);
-
+    let totalDays = Math.floor((currentDateUTC - epochStart) / millisecondsPerDay);
     const currentSeasonIndex = totalDays % seasons.length;
-
+    
     return seasons[currentSeasonIndex];
-}
+  };
 
 module.exports = async function (ws, actionData) {
 
