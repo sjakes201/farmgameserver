@@ -28,7 +28,6 @@ module.exports = async function (ws, actionData) {
 
     // Multitile input: receive an array of objects, one object per tile, each tile has tileID: which is the tile id [{tileID: 2}, {tileID: 4}, {tileID: 5}]
     const tiles = actionData.tiles;
-    // const tiles = [{ tileID: 1 }, { tileID: 2 }, { tileID: 3 }, { tileID: 11 }, { tileID: 21 }, { tileID: 31 }, { tileID: 41 }, { tileID: 51 }]
     if (tiles.length <= 0) {
         return {
             message: "Invalid multiHarvest tiles count"
@@ -58,7 +57,6 @@ module.exports = async function (ws, actionData) {
         WHERE 
             TM.UserID = @UserID;
 
-        -- Query for upgrades associated with the user
         SELECT * 
         FROM 
             Upgrades 
