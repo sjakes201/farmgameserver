@@ -6,6 +6,7 @@ const TOWNINFO = require('../shared/TOWNINFO')
 const TOWNSHOP = require('../shared/TOWNSHOP')
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
+const BOOSTSINFO = require('../shared/BOOSTSINFO')
 
 const townGoalContribute = require(`../shared/townGoalContribute`);
 
@@ -19,9 +20,43 @@ const getCurrentSeason = () => {
 
     let totalDays = Math.floor((currentDateUTC - epochStart) / millisecondsPerDay);
     const currentSeasonIndex = totalDays % seasons.length;
-    
+
     return seasons[currentSeasonIndex];
-  };
+};
+
+const getCropQty = (quantityTableName, cropID, activeYieldsFert, activeBoosts) => {
+    let crop = CONSTANTS.ProduceNameFromID[cropID];
+    let qty = UPGRADES[quantityTableName][crop]
+
+    if (activeYieldsFert) {
+        let qtyIncrease = CONSTANTS.yieldFertilizerBonuses[crop]
+        qty += qtyIncrease;
+    }
+
+    activeBoosts?.forEach(boost => {
+        if (boost.Type === 'QTY' && boost.BoostTarget === "CROPS") {
+            let qtyIncrease = BOOSTSINFO[boost.BoostName]?.boostQtys?.[crop];
+            qty += qtyIncrease;
+        } else if (boost.Type === 'QTY' && boost.BoostTarget === crop) {
+            let boostName = boost.BoostName;
+            let level = boostName[boostName.length - 1];
+            const qtyIncrease = BOOSTSINFO?.[`CROP_INDIV_${level}`]?.boostQtys?.[crop];
+            qty += qtyIncrease
+        }
+    })
+
+    return qty;
+}
+
+const getGrowthTime = (growthTableName, cropID) => {
+    let secsNeeded = (UPGRADES[growthTableName][CONSTANTS.ProduceNameFromID[cropID]]).reduce((prev, sum) => sum + prev);
+    return secsNeeded
+}
+
+const getSecsPassed = (plantTime) => {
+    let secsPassed = (Date.now() - plantTime) / (1000);
+}
+
 
 module.exports = async function (ws, actionData) {
 
@@ -108,6 +143,21 @@ module.exports = async function (ws, actionData) {
         let cropsSum = {};
         let xpSum = 0;
 
+        let boostsQuery = await preRequest.query(`
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            FROM PlayerBoosts PB
+            LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
+            WHERE UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
+        `)
+        let activeBoosts = []
+        boostsQuery.recordset?.forEach(boost => {
+            activeBoosts.push({
+                BoostName: boost.BoostName,
+                Type: boost.Type,
+                BoostTarget: boost.BoostTarget
+            })
+        })
+
         tilesToCheck.forEach((tile) => {
             let updatedTile = {
                 TileID: tile.TileID,
@@ -120,8 +170,15 @@ module.exports = async function (ws, actionData) {
             secsPassed += 0.5;
 
             let cropID = tile.CropID;
-            let secsNeeded = (UPGRADES[growthTableName][CONSTANTS.ProduceNameFromID[cropID]]).reduce((prev, sum) => sum + prev);
 
+            let secsNeeded = getGrowthTime(growthTableName, cropID);
+            activeBoosts?.forEach(boost => {
+                if(boost.Type === "TIME" && boost.BoostTarget === "CROPS") {
+                    let boostPercent = BOOSTSINFO[boost.BoostName].boostPercent;
+                    secsPassed *= 1 + boostPercent;
+                }
+            })
+            
             let activeFertilizer = false;
             let timeFertRemainingSecs = -1;
             // check if fertilized
@@ -135,6 +192,7 @@ module.exports = async function (ws, actionData) {
                 }
                 timeFertRemainingSecs = (CONSTANTS.VALUES.TimeFeritilizeDuration - (curTime - fertilizedTime)) / 1000
             }
+
             if (townPerks?.cropTimeLevel > 0) {
                 let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];
                 let boostChange = 1 + boostPercent;
@@ -151,14 +209,11 @@ module.exports = async function (ws, actionData) {
                 // decrease RemainingHarvests, if 0, clear tile, else, set to beginning of last growth stage (only has to do last growth time again)
 
                 let crop_name = CONSTANTS.SeedCropMap[CONSTANTS.ProduceNameFromID[cropID]][0];
-                let crop_qty = UPGRADES[quantityTableName][CONSTANTS.ProduceNameFromID[cropID]]
                 // if we have a yields fertilizer, increment crop_qty then also decrement in croptiles update
                 let activeYieldsFert = tile.YieldsFertilizer > 0;
 
-                if (activeYieldsFert) {
-                    let bonus = CONSTANTS.yieldFertilizerBonuses[CONSTANTS.ProduceNameFromID[cropID]]
-                    crop_qty = crop_qty + bonus;
-                }
+                let crop_qty = getCropQty(quantityTableName, cropID, activeYieldsFert, activeBoosts)
+
                 // increment XP sum and crops sum
                 xpSum += CONSTANTS.XP[crop_name]
 
@@ -195,6 +250,13 @@ module.exports = async function (ws, actionData) {
                         // active time fertilizer that has not expired
                         timeSkip /= 2;
                     }
+
+                    activeBoosts?.forEach(boost => {
+                        if(boost.Type === "TIME" && boost.BoostTarget === "CROPS") {
+                            let boostPercent = BOOSTSINFO[boost.BoostName].boostPercent;
+                            timeSkip /= (1 + boostPercent);
+                        }
+                    })
 
                     if (townPerks?.cropTimeLevel > 0) {
                         let boostPercent = TOWNSHOP.perkBoosts.cropTimeLevel[townPerks.cropTimeLevel - 1];

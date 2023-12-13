@@ -6,7 +6,14 @@ const { poolPromise } = require('../../db');
 const townGoalContribute = require(`../shared/townGoalContribute`);
 const TOWNINFO = require('../shared/TOWNINFO');
 const TOWNSHOP = require('../shared/TOWNSHOP')
+const BOOSTSINFO = require('../shared/BOOSTSINFO')
 
+
+/*
+
+    DEFUNCT, NOW USING MULTIHARVEST FOR EVERYTHING
+
+*/
 const getCurrentSeason = () => {
     const seasons = ['spring', 'summer', 'fall', 'winter'];
     const currentDateUTC = new Date(Date.now());
@@ -17,9 +24,28 @@ const getCurrentSeason = () => {
 
     let totalDays = Math.floor((currentDateUTC - epochStart) / millisecondsPerDay);
     const currentSeasonIndex = totalDays % seasons.length;
-    
+
     return seasons[currentSeasonIndex];
-  };
+};
+
+const getCropQty = (quantityTableName, cropID, activeYieldsFert, activeBoosts) => {
+    let crop = CONSTANTS.ProduceNameFromID[cropID];
+    let qty = UPGRADES[quantityTableName][crop]
+
+    if (activeYieldsFert) {
+        let qtyIncrease = CONSTANTS.yieldFertilizerBonuses[crop]
+        qty += qtyIncrease;
+    }
+
+    activeBoosts?.forEach(boost => {
+        if(boost.type === 'QTY') {
+            let qtyIncrease = BOOSTSINFO[boost]?.boostQtys?.[crop];
+            qty += qtyIncrease;
+        }
+    })
+
+    return qty;
+}
 
 module.exports = async function (ws, actionData) {
     // GET USERID
@@ -136,21 +162,28 @@ module.exports = async function (ws, actionData) {
 
             let crop_name = CONSTANTS.SeedCropMap[CONSTANTS.ProduceNameFromID[cropID]][0];
             resultingGood = crop_name;
-            let crop_qty = UPGRADES[quantityTableName][CONSTANTS.ProduceNameFromID[cropID]]
-            // if we have a yields fertilizer, increment crop_qty then also decrement in croptiles update
+
             let activeYieldsFert = false;
             activeYieldsFert = tilecontents.recordset[0].YieldsFertilizer > 0;
 
-            if (activeYieldsFert) {
-                let bonus = CONSTANTS.yieldFertilizerBonuses[CONSTANTS.ProduceNameFromID[cropID]]
-                request.input('crop_qty', sql.Int, crop_qty + bonus);
-                resultingQuantity = crop_qty + bonus;
+            let boostsQuery = await preRequest.query(`
+                SELECT BT.BoostName, BT.Type
+                FROM PlayerBoosts PB
+                LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
+                WHERE UserID = @UserID AND (PB.StartTime + PB.Duration) > ${Date.now()}
+            `)
+            let activeBoosts = []
+            boostsQuery.recordset?.forEach(boost => {
+                activeBoosts.push({
+                    boostName: boost.BoostName,
+                    type: boost.Type
+                })
+            })
 
-            } else {
-                request.input('crop_qty', sql.Int, crop_qty);
-                resultingQuantity = crop_qty;
+            let crop_qty = getCropQty(quantityTableName, cropID, activeYieldsFert, activeBoosts);
+            resultingQuantity = crop_qty;
 
-            }
+            request.input('crop_qty', sql.Int, crop_qty);
             request.input('xp', sql.Int, CONSTANTS.XP[crop_name]);
 
             let remaining_harvests = (tilecontents.recordset[0].HarvestsRemaining);
@@ -262,7 +295,7 @@ module.exports = async function (ws, actionData) {
                 let boostChange = 1 + boostPercent;
                 chance *= boostChange;
             }
-            
+
             if (getCurrentSeason() === 'winter') {
                 chance *= 1 + CONSTANTS.VALUES.WINTER_PARTS_BUFF
             }

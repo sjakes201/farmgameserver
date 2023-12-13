@@ -6,18 +6,40 @@ const UPGRADES = require('../shared/UPGRADES');
 const townGoalContribute = require(`../shared/townGoalContribute`);
 const TOWNINFO = require('../shared/TOWNINFO');
 const TOWNSHOP = require('../shared/TOWNSHOP')
+const BOOSTSINFO = require('../shared/BOOSTSINFO')
 
 const getCurrentSeason = () => {
     const seasons = ['spring', 'summer', 'fall', 'winter'];
-    const currentDate = new Date();
-    const epochStart = new Date(1970, 0, 1);
-    const millisecondsPerDay = 24 * 60 * 60 * 1000;
+    const nowMS = Date.now();
+    let msPerDay = 24 * 60 * 60 * 1000;
+    let daysPassed = Math.floor(nowMS / msPerDay)
+    let seasonIndex = daysPassed % 4;
+    return seasons[seasonIndex];
+};
 
-    let totalDays = Math.floor((currentDate - epochStart) / millisecondsPerDay);
-
-    const currentSeasonIndex = totalDays % seasons.length;
-
-    return seasons[currentSeasonIndex];
+const getCollectQty = (animalType, quantityTableName, happiness, nextRandom, activeBoosts) => {
+    let qty = UPGRADES[quantityTableName][animalType][1]
+    let inSeason = CONSTANTS.animalSeasons[getCurrentSeason()].includes(animalType);
+    let probOfExtra = happiness > 1 ? 0.67 : happiness / 1.5;
+    if (inSeason) {
+        probOfExtra += 0.1
+    }
+    if (nextRandom < probOfExtra) {
+        // extra produce bc of happiness
+        qty += 1;
+    }
+    activeBoosts?.forEach(boost => {
+        if (boost.Type === 'QTY' && boost.BoostTarget === 'ANIMALS') {
+            let qtyIncrease = BOOSTSINFO[boost.BoostName].boostQtys[animalType]
+            qty += qtyIncrease;
+        } else if (boost.Type === 'QTY' && boost.BoostTarget === animalType) {
+            let boostName = boost.BoostName;
+            let level = boostName[boostName.length - 1];
+            const qtyIncrease = BOOSTSINFO?.[`ANIMAL_INDIV_${level}`]?.boostQtys?.[animalType];
+            qty += qtyIncrease;
+        }
+    })
+    return qty
 }
 
 module.exports = async function (ws, actionData) {
@@ -56,9 +78,16 @@ module.exports = async function (ws, actionData) {
             WHERE 
                 UserID = @UserID;
 
+            
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            FROM PlayerBoosts PB
+                LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
+            WHERE UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
+
         `);
         let townPerks = userQuery.recordsets[0][0]
         let upgrades = userQuery.recordsets[1][0]
+        let activeBoosts = userQuery.recordsets[2]
 
         // Begin transaction
         transaction = new sql.Transaction(connection);
@@ -122,7 +151,7 @@ module.exports = async function (ws, actionData) {
             let boostChange = 1 + boostPercent;
             secsPassed *= boostChange;
         }
-        
+
         let inSeason = CONSTANTS.animalSeasons[getCurrentSeason()].includes(animalType);
         if (inSeason) {
             let boostPercent = CONSTANTS.VALUES.SEASON_ANIMAL_BUFF;
@@ -130,23 +159,25 @@ module.exports = async function (ws, actionData) {
             secsPassed *= boostChange;
         }
 
+        activeBoosts?.forEach(boost => {
+            if (boost.Type === "TIME" && boost.BoostTarget === "ANIMALS") {
+                let boostPercent = BOOSTSINFO[boost.BoostName].boostPercent;
+                secsPassed *= 1 + boostPercent;
+            }
+        })
 
         if (secsPassed >= timeNeeded) {
             // Enough time has passed
-            let [produce, qty] = UPGRADES[quantityTableName][animalType];
+            let happiness = animalInfo.recordset[0].Happiness, nextRandom = animalInfo.recordset[0].Next_random;
+            let produce = UPGRADES[quantityTableName][animalType][0]
+
+            let qty = getCollectQty(animalType, quantityTableName, happiness, nextRandom, activeBoosts);
+
             request.input('curTime', sql.Decimal, curTime);
             request.input('xp', sql.Int, CONSTANTS.XP[produce])
 
             // Random probability of extra qty? At max happiness, 50% chance of extra produce
-            let happiness = animalInfo.recordset[0].Happiness, nextRandom = animalInfo.recordset[0].Next_random;
-            let probOfExtra = happiness > 1 ? 0.67 : happiness / 1.5;
-            if(inSeason) {
-                probOfExtra += 0.1
-            }
-            if (nextRandom < probOfExtra) {
-                // extra produce bc of happiness
-                qty += 1;
-            }
+
             // For town goals
             resultingGood = produce; resultingQuantity = qty;
 
