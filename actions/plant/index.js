@@ -3,7 +3,11 @@ const UPGRADES = require('../shared/UPGRADES');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 
+/*
 
+    DEFUNCT, NOW USING MULTIPLANT FOR EVERYTHING
+
+*/
 
 module.exports = async function (ws, actionData) {
 

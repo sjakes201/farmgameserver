@@ -21,7 +21,11 @@ module.exports = async function (ws, actionData) {
         SELECT Balance, XP, profilePic FROM Profiles WHERE UserID = @UserID;
         SELECT * FROM Upgrades WHERE UserID = @UserID;
         SELECT * FROM Inventory_PRODUCE WHERE UserID = @UserID;
-        SELECT * FROM LeaderboardSum WHERE UserID = @UserID
+        SELECT * FROM LeaderboardSum WHERE UserID = @UserID;
+        SELECT PB.StartTime, BT.Duration, PB.BoostID, BT.BoostName, BT.Type, BT.BoostTarget
+            FROM PlayerBoosts PB
+            LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
+            WHERE UserID = @UserID AND PB.StartTime + BT.Duration > ${Date.now()};
         `);
 
         let allProfile = {
@@ -31,6 +35,7 @@ module.exports = async function (ws, actionData) {
             ...allInfo.recordsets[3][0],
             ...allInfo.recordsets[4][0],
             ...allInfo.recordsets[5][0],
+            activeBoosts: allInfo.recordsets?.[6],
         }
 
         delete allProfile.UserID
