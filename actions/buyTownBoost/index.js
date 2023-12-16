@@ -1,6 +1,6 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
-const TOWNSHOP = require('../shared/TOWNSHOP');
+const BOOSTSINFO = require('../shared/BOOSTSINFO');
 const { sendTownUsersData } = require('../../broadcastFunctions')
 
 module.exports = async function (ws, actionData) {
@@ -8,7 +8,7 @@ module.exports = async function (ws, actionData) {
     const UserID = ws.UserID;
     const boostName = actionData.boostName;
 
-    if (!(boostName in TOWNSHOP.boostCosts)) {
+    if (!(boostName in BOOSTSINFO.townBoostsInfo)) {
         return {
             success: false,
             message: `Invalid boost name: ${boostName}`
@@ -52,7 +52,7 @@ module.exports = async function (ws, actionData) {
             }
         }
 
-        const boostCost = TOWNSHOP.boostCosts[boostName]
+        const boostCost = BOOSTSINFO.townBoostsInfo[boostName].cost
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
