@@ -180,6 +180,11 @@ module.exports = async function (ws, actionData) {
             if (boost.Type === "TIME" && boost.BoostTarget === "ANIMALS") {
                 let boostPercent = BOOSTSINFO[boost.BoostName].boostPercent;
                 secsPassed *= 1 + boostPercent;
+            } else if (boost.Type === "TIME" && boost.BoostTarget === animalType) {
+                let boostName = boost.BoostName;
+                let level = boostName[boostName.length - 1];
+                let boostPercent = BOOSTSINFO?.[`ANIMAL_INDIV_TIME_${level}`]?.boostPercents[animalType];
+                secsPassed *= 1 + boostPercent;
             }
         })
 

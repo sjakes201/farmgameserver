@@ -1,6 +1,6 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
-const { townServerBroadcast } = require('../../broadcastFunctions')
+const { sendTownUsersData } = require('../../broadcastFunctions')
 const { townPerkCost } = require('../shared/townHelpers')
 const TOWNSHOP = require('../shared/TOWNSHOP')
 
@@ -88,6 +88,8 @@ module.exports = async function (ws, actionData) {
         }
 
         await transaction.commit();
+        sendTownUsersData(userTownID, 'TOWN_CHANGE', {})
+
         return {
             success: true
         }

@@ -184,6 +184,11 @@ module.exports = async function (ws, actionData) {
                 if (boost.Type === "TIME" && boost.BoostTarget === "CROPS") {
                     let boostPercent = BOOSTSINFO[boost.BoostName].boostPercent;
                     secsPassed *= 1 + boostPercent;
+                } else if (boost.Type === "TIME" && boost.BoostTarget === CONSTANTS.ProduceNameFromID[cropID]) {
+                    let boostName = boost.BoostName;
+                    let level = boostName[boostName.length - 1];
+                    let boostPercent = BOOSTSINFO?.[`CROP_INDIV_TIME_${level}`]?.boostPercents[CONSTANTS.ProduceNameFromID[cropID]];
+                    secsPassed *= 1 + boostPercent;
                 }
             })
 
