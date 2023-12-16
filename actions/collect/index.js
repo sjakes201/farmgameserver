@@ -87,8 +87,25 @@ module.exports = async function (ws, actionData) {
         `);
         let townPerks = userQuery.recordsets[0][0]
         let upgrades = userQuery.recordsets[1][0]
-        let activeBoosts = userQuery.recordsets[2]
 
+        let townID = townPerks?.townID;
+
+        let boostsQuery = await preRequest.query(`
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            FROM PlayerBoosts PB
+            LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
+            WHERE PB.UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
+            
+            ${townID ? `
+            UNION
+            
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            FROM TownBoosts TB
+            LEFT JOIN BoostTypes BT ON TB.BoostTypeID = BT.BoostTypeID
+            WHERE TB.townID = ${townID} AND (TB.StartTime + BT.Duration) > ${Date.now()}
+            ` : ''}        
+        `)
+        let activeBoosts = boostsQuery.recordset;
         // Begin transaction
         transaction = new sql.Transaction(connection);
         await transaction.begin();

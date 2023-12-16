@@ -52,6 +52,12 @@ module.exports = async function (ws, actionData) {
         
         SELECT * FROM TownGoals WHERE townID = @targetTownID
         SELECT townFunds, cropTimeLevel, animalTimeLevel, partsChanceLevel, orderRefreshLevel, happinessMultiplierLevel FROM TownPurchases WHERE townID = @targetTownID
+        
+        SELECT BT.BoostName, TB.StartTime, BT.Duration, BT.Type
+        FROM TownBoosts TB
+        LEFT JOIN BoostTypes BT ON TB.BoostTypeID = BT.BoostTypeID
+        WHERE TB.townID = @targetTownID AND TB.StartTime + BT.Duration > ${Date.now()}
+
         SELECT 
         CASE 
             WHEN EXISTS (SELECT 1 FROM TownJoinRequests WHERE UserID = @UserID AND targetTownID = @targetTownID) THEN 1
@@ -66,6 +72,7 @@ module.exports = async function (ws, actionData) {
         let goals = [moreTownInfo.recordsets[2][0].goal_1, moreTownInfo.recordsets[2][0].goal_2, moreTownInfo.recordsets[2][0].goal_3, moreTownInfo.recordsets[2][0].goal_4, moreTownInfo.recordsets[2][0].goal_5, moreTownInfo.recordsets[2][0].goal_6, moreTownInfo.recordsets[2][0].goal_7, moreTownInfo.recordsets[2][0].goal_8]
         let progresses = [moreTownInfo.recordsets[2][0].progress_1, moreTownInfo.recordsets[2][0].progress_2, moreTownInfo.recordsets[2][0].progress_3, moreTownInfo.recordsets[2][0].progress_4, moreTownInfo.recordsets[2][0].progress_5, moreTownInfo.recordsets[2][0].progress_6, moreTownInfo.recordsets[2][0].progress_7, moreTownInfo.recordsets[2][0].progress_8]
         let townPurchases = moreTownInfo.recordsets?.[3]?.[0];
+        let activeTownBoosts = moreTownInfo.recordsets?.[4]
 
         let goalsData = []
         goals.forEach((goal, index) => {
@@ -153,12 +160,12 @@ module.exports = async function (ws, actionData) {
                 memberCount: moreTownInfo.recordsets?.[0]?.length,
                 status: targetTown.status,
                 playersData: playersData,
-                sentJoinRequest: moreTownInfo.recordsets?.[4]?.[0]?.sendJoinRequest,
+                sentJoinRequest: moreTownInfo.recordsets?.[5]?.[0]?.sendJoinRequest,
                 growthPerkLevel: targetTown.growthPerkLevel,
                 partsPerkLevel: targetTown.partsPerkLevel,
                 orderRefreshPerkLevel: targetTown.orderRefreshLevel,
                 animalPerkLevel: targetTown.animalPerkLevel,
-                sentJoinRequest: moreTownInfo.recordsets?.[4]?.[0]?.sentJoinRequest,
+                sentJoinRequest: moreTownInfo.recordsets?.[5]?.[0]?.sentJoinRequest,
                 myUnclaimed: myUnclaimed,
                 imInTown: imInTown,
                 townXP: targetTown.townXP,
@@ -179,6 +186,7 @@ module.exports = async function (ws, actionData) {
             partsPerkLevel: targetTown.partsPerkLevel,
             orderRefreshPerkLevel: targetTown.orderRefreshLevel,
             animalPerkLevel: targetTown.animalPerkLevel,
+            activeTownBoosts: activeTownBoosts,
             // Data personal to requester
             myUnclaimed: myUnclaimed,
             imInTown: imInTown,

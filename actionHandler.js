@@ -31,6 +31,7 @@ const playingLate = (UserID, offset) => {
 }
 
 const handleAction = async (ws, MESSAGE_ID, action, params) => {
+
     try {
         switch (action) {
             case 'prices':
@@ -304,6 +305,14 @@ const handleAction = async (ws, MESSAGE_ID, action, params) => {
             case 'resolveJoinRequest':
                 let rjrData = await actions.resolveJoinRequest(ws, params)
                 ws.send(JSON.stringify({ action: 'resolveJoinRequest', MESSAGE_ID, body: rjrData }));
+                break;
+            case 'getActiveBoosts':
+                let abData = await actions.getActiveBoosts(ws, params)
+                ws.send(JSON.stringify({ action: 'getActiveBoosts', MESSAGE_ID, body: abData }));
+                break;
+            case 'buyTownBoost':
+                let btbData = await actions.buyTownBoost(ws, params)
+                ws.send(JSON.stringify({ action: 'buyTownBoost', MESSAGE_ID, body: btbData }));
                 break;
         }
     } catch (error) {
