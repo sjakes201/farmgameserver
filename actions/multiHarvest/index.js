@@ -32,7 +32,6 @@ const getCropQty = (quantityTableName, cropID, activeYieldsFert, activeBoosts) =
         let qtyIncrease = CONSTANTS.yieldFertilizerBonuses[crop]
         qty += qtyIncrease;
     }
-
     activeBoosts?.forEach(boost => {
         if (boost.Type === 'QTY' && boost.BoostTarget === "CROPS") {
             let qtyIncrease = BOOSTSINFO[boost.BoostName]?.boostQtys?.[crop];
@@ -100,9 +99,9 @@ module.exports = async function (ws, actionData) {
             UserID = @UserID;
 
         `);
-
-        let townPerks = userQuery.recordsets[0][0]
-        let upgrades = userQuery.recordsets[1][0]
+        let townPerks = userQuery.recordsets[0][0];
+        let upgrades = userQuery.recordsets[1][0];
+        let townID = userQuery.recordsets[0]?.[0]?.townID;
 
         transaction = new sql.Transaction(connection);
         await transaction.begin();
@@ -147,7 +146,16 @@ module.exports = async function (ws, actionData) {
             SELECT BT.BoostName, BT.Type, BT.BoostTarget
             FROM PlayerBoosts PB
             LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
-            WHERE UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
+            WHERE PB.UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
+            
+            ${townID ? `
+            UNION
+            
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            FROM TownBoosts TB
+            LEFT JOIN BoostTypes BT ON TB.BoostTypeID = BT.BoostTypeID
+            WHERE TB.townID = ${townID} AND (TB.StartTime + BT.Duration) > ${Date.now()}
+            ` : ''}        
         `)
         let activeBoosts = []
         boostsQuery.recordset?.forEach(boost => {
@@ -173,12 +181,12 @@ module.exports = async function (ws, actionData) {
 
             let secsNeeded = getGrowthTime(growthTableName, cropID);
             activeBoosts?.forEach(boost => {
-                if(boost.Type === "TIME" && boost.BoostTarget === "CROPS") {
+                if (boost.Type === "TIME" && boost.BoostTarget === "CROPS") {
                     let boostPercent = BOOSTSINFO[boost.BoostName].boostPercent;
                     secsPassed *= 1 + boostPercent;
                 }
             })
-            
+
             let activeFertilizer = false;
             let timeFertRemainingSecs = -1;
             // check if fertilized
@@ -252,7 +260,7 @@ module.exports = async function (ws, actionData) {
                     }
 
                     activeBoosts?.forEach(boost => {
-                        if(boost.Type === "TIME" && boost.BoostTarget === "CROPS") {
+                        if (boost.Type === "TIME" && boost.BoostTarget === "CROPS") {
                             let boostPercent = BOOSTSINFO[boost.BoostName].boostPercent;
                             timeSkip /= (1 + boostPercent);
                         }
