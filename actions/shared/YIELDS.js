@@ -36,7 +36,7 @@ module.exports = {
         },
         yieldsUpgradeTier2: {
             carrot_seeds: [0, 0, 0, 0.2, 0.6, 0.1, 0.1],
-            melon_seeds: [0, 0.2, 0.55, 0.25],
+            melon_seeds: [0.2, 0.55, 0.25],
             cauliflower_seeds: [0.2, 0.6, 0.2],
             pumpkin_seeds: [0.15, 0.70, 0.1, 0.05],
             yam_seeds: [0, 0, 0.2, 0.6, 0.1, 0.1],
