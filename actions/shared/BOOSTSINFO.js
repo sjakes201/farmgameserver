@@ -199,6 +199,7 @@ module.exports = {
         }
     },
     townBoostsInfo: {
+        // JUST REDUNDANT FOR TOWNS FUNCTIONS, KEEP THIS SYNCED
         CARROT_1: { cost: 2000, type: "QTY", duration: "1 DAY", qty: 3 },
         CAULIFLOWER_1: { cost: 2000, type: "QTY", duration: "1 DAY", qty: 1 },
         MELON_1: { cost: 2000, type: "QTY", duration: "1 DAY", qty: 1 },
