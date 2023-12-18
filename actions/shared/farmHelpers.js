@@ -1,5 +1,15 @@
 const YIELDS = require("./YIELDS")
 const BOOSTSINFO = require("./BOOSTSINFO")
+const CONSTANTS = require("./CONSTANTS")
+
+const getCurrentSeason = () => {
+    const seasons = ['spring', 'summer', 'fall', 'winter'];
+    const nowMS = Date.now();
+    let msPerDay = 24 * 60 * 60 * 1000;
+    let daysPassed = Math.floor(nowMS / msPerDay)
+    let seasonIndex = daysPassed % 4;
+    return seasons[seasonIndex];
+};
 
 function calcCropYield(nextRandom, seedName, yieldsUpgradeTier, yieldsFertilizer, activeBoosts) {
     if (!(typeof nextRandom === "number" && !isNaN(nextRandom) && nextRandom >= 0 && nextRandom <= 1)) throw new Error("nextRandom must be a decimal number in [0, 1]")
@@ -59,6 +69,9 @@ function calcProduceYield(animalType, yieldsUpgradeTier, happiness, nextRandom, 
     // Add to roll based on happiness (luck factor)
     if (happiness > 1) happiness = 1;
     roll += (happiness / 3)
+    
+    let inSeason = CONSTANTS.animalSeasons[getCurrentSeason()].includes(animalType);
+    if(inSeason) roll += 0.1;
 
     // Add to yields based on QTY boosts (final yields factor)
     activeBoosts?.forEach(boost => {
