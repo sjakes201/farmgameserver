@@ -7,6 +7,7 @@ const townGoalContribute = require(`../shared/townGoalContribute`);
 const TOWNINFO = require('../shared/TOWNINFO');
 const TOWNSHOP = require('../shared/TOWNSHOP')
 const BOOSTSINFO = require('../shared/BOOSTSINFO')
+const { calcProduceYield } = require('../shared/farmHelpers')
 
 const getCurrentSeason = () => {
     const seasons = ['spring', 'summer', 'fall', 'winter'];
@@ -16,31 +17,6 @@ const getCurrentSeason = () => {
     let seasonIndex = daysPassed % 4;
     return seasons[seasonIndex];
 };
-
-const getCollectQty = (animalType, quantityTableName, happiness, nextRandom, activeBoosts) => {
-    let qty = UPGRADES[quantityTableName][animalType][1]
-    let inSeason = CONSTANTS.animalSeasons[getCurrentSeason()].includes(animalType);
-    let probOfExtra = happiness > 1 ? 0.67 : happiness / 1.5;
-    if (inSeason) {
-        probOfExtra += 0.1
-    }
-    if (nextRandom < probOfExtra) {
-        // extra produce bc of happiness
-        qty += 1;
-    }
-    activeBoosts?.forEach(boost => {
-        if (boost.Type === 'QTY' && boost.BoostTarget === 'ANIMALS') {
-            let qtyIncrease = BOOSTSINFO[boost.BoostName].boostQtys[animalType]
-            qty += qtyIncrease;
-        } else if (boost.Type === 'QTY' && boost.BoostTarget === animalType) {
-            let boostName = boost.BoostName;
-            let level = boostName[boostName.length - 1];
-            const qtyIncrease = BOOSTSINFO?.[`ANIMAL_INDIV_${level}`]?.boostQtys?.[animalType];
-            qty += qtyIncrease;
-        }
-    })
-    return qty
-}
 
 module.exports = async function (ws, actionData) {
 
@@ -91,7 +67,7 @@ module.exports = async function (ws, actionData) {
         let townID = townPerks?.townID;
 
         let boostsQuery = await preRequest.query(`
-            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget, PB.BoostID
             FROM PlayerBoosts PB
             LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
             WHERE PB.UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
@@ -99,7 +75,7 @@ module.exports = async function (ws, actionData) {
             ${townID ? `
             UNION
             
-            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget, TB.BoostID
             FROM TownBoosts TB
             LEFT JOIN BoostTypes BT ON TB.BoostTypeID = BT.BoostTypeID
             WHERE TB.townID = ${townID} AND (TB.StartTime + BT.Duration) > ${Date.now()}
@@ -193,7 +169,7 @@ module.exports = async function (ws, actionData) {
             let happiness = animalInfo.recordset[0].Happiness, nextRandom = animalInfo.recordset[0].Next_random;
             let produce = UPGRADES[quantityTableName][animalType][0]
 
-            let qty = getCollectQty(animalType, quantityTableName, happiness, nextRandom, activeBoosts);
+            let qty = calcProduceYield(animalType, quantityUGLevel, happiness, nextRandom, activeBoosts);
 
             request.input('curTime', sql.Decimal, curTime);
             request.input('xp', sql.Int, CONSTANTS.XP[produce])

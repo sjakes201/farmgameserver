@@ -7,6 +7,7 @@ const TOWNSHOP = require('../shared/TOWNSHOP')
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const BOOSTSINFO = require('../shared/BOOSTSINFO')
+const { calcCropYield } = require('../shared/farmHelpers')
 
 const townGoalContribute = require(`../shared/townGoalContribute`);
 
@@ -24,38 +25,10 @@ const getCurrentSeason = () => {
     return seasons[currentSeasonIndex];
 };
 
-const getCropQty = (quantityTableName, cropID, activeYieldsFert, activeBoosts) => {
-    let crop = CONSTANTS.ProduceNameFromID[cropID];
-    let qty = UPGRADES[quantityTableName][crop]
-
-    if (activeYieldsFert) {
-        let qtyIncrease = CONSTANTS.yieldFertilizerBonuses[crop]
-        qty += qtyIncrease;
-    }
-    activeBoosts?.forEach(boost => {
-        if (boost.Type === 'QTY' && boost.BoostTarget === "CROPS") {
-            let qtyIncrease = BOOSTSINFO[boost.BoostName]?.boostQtys?.[crop];
-            qty += qtyIncrease;
-        } else if (boost.Type === 'QTY' && boost.BoostTarget === crop) {
-            let boostName = boost.BoostName;
-            let level = boostName[boostName.length - 1];
-            const qtyIncrease = BOOSTSINFO?.[`CROP_INDIV_${level}`]?.boostQtys?.[crop];
-            qty += qtyIncrease
-        }
-    })
-
-    return qty;
-}
-
 const getGrowthTime = (growthTableName, cropID) => {
     let secsNeeded = (UPGRADES[growthTableName][CONSTANTS.ProduceNameFromID[cropID]]).reduce((prev, sum) => sum + prev);
     return secsNeeded
 }
-
-const getSecsPassed = (plantTime) => {
-    let secsPassed = (Date.now() - plantTime) / (1000);
-}
-
 
 module.exports = async function (ws, actionData) {
 
@@ -143,7 +116,7 @@ module.exports = async function (ws, actionData) {
         let xpSum = 0;
 
         let boostsQuery = await preRequest.query(`
-            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget, PB.BoostID
             FROM PlayerBoosts PB
             LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
             WHERE PB.UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
@@ -151,12 +124,13 @@ module.exports = async function (ws, actionData) {
             ${townID ? `
             UNION
             
-            SELECT BT.BoostName, BT.Type, BT.BoostTarget
+            SELECT BT.BoostName, BT.Type, BT.BoostTarget, TB.BoostID
             FROM TownBoosts TB
             LEFT JOIN BoostTypes BT ON TB.BoostTypeID = BT.BoostTypeID
             WHERE TB.townID = ${townID} AND (TB.StartTime + BT.Duration) > ${Date.now()}
             ` : ''}        
         `)
+
         let activeBoosts = []
         boostsQuery.recordset?.forEach(boost => {
             activeBoosts.push({
@@ -172,6 +146,9 @@ module.exports = async function (ws, actionData) {
                 CropID: -1,
                 PlantTime: null
             };
+            let nextRandom = tile.nextRandom;
+            const newRandom = (Math.floor(Math.random() * 99) + 1) / 100;
+
             let plantTime = tile.PlantTime;
             let secsPassed = (curTime - plantTime) / (1000);
             // buffer for less 400's
@@ -225,7 +202,7 @@ module.exports = async function (ws, actionData) {
                 // if we have a yields fertilizer, increment crop_qty then also decrement in croptiles update
                 let activeYieldsFert = tile.YieldsFertilizer > 0;
 
-                let crop_qty = getCropQty(quantityTableName, cropID, activeYieldsFert, activeBoosts)
+                let crop_qty = calcCropYield(nextRandom, seedName, upgrades.plantHarvestQuantityUpgrade, activeYieldsFert, activeBoosts)
 
                 // increment XP sum and crops sum
                 xpSum += CONSTANTS.XP[crop_name]
@@ -237,11 +214,22 @@ module.exports = async function (ws, actionData) {
                     // no more harvests or was single harvest
                     if (activeYieldsFert) {
                         updateCropTilesQuery += `
-                         UPDATE CropTiles set CropID = -1, PlantTime = NULL, YieldsFertilizer = YieldsFertilizer - 1, HarvestsRemaining = NULL WHERE UserID = @UserID AND TileID = ${tile.TileID} 
+                         UPDATE CropTiles set 
+                         CropID = -1, 
+                         PlantTime = NULL, 
+                         YieldsFertilizer = YieldsFertilizer - 1, 
+                         HarvestsRemaining = NULL,
+                         nextRandom = ${newRandom}
+                         WHERE UserID = @UserID AND TileID = ${tile.TileID} 
                         `
                     } else {
                         updateCropTilesQuery += `
-                        UPDATE CropTiles set CropID = -1, PlantTime = NULL, HarvestsRemaining = NULL WHERE UserID = @UserID AND TileID = ${tile.TileID}
+                        UPDATE CropTiles set 
+                            CropID = -1, 
+                            PlantTime = NULL, 
+                            HarvestsRemaining = NULL,
+                            nextRandom = ${newRandom}
+                        WHERE UserID = @UserID AND TileID = ${tile.TileID}
                         `
                     }
                     updatedTile = {
@@ -288,24 +276,44 @@ module.exports = async function (ws, actionData) {
                         // remove fertilizer for future harvests
                         if (activeYieldsFert) {
                             updateCropTilesQuery += `
-                                UPDATE CropTiles set HarvestsRemaining = HarvestsRemaining - 1, PlantTime = ${adjustedPlantTime}, TimeFertilizer = -1, YieldsFertilizer = YieldsFertilizer - 1 WHERE UserID = @UserID AND TileID = ${tile.TileID}
+                                UPDATE CropTiles set
+                                    HarvestsRemaining = HarvestsRemaining - 1,
+                                    PlantTime = ${adjustedPlantTime}, 
+                                    TimeFertilizer = -1,
+                                    YieldsFertilizer = YieldsFertilizer - 1,
+                                    nextRandom = ${newRandom}
+                                WHERE UserID = @UserID AND TileID = ${tile.TileID}
                            `
 
                         } else {
                             updateCropTilesQuery += `
-                                UPDATE CropTiles set HarvestsRemaining = HarvestsRemaining - 1, PlantTime = ${adjustedPlantTime}, TimeFertilizer = -1 WHERE UserID = @UserID AND TileID = ${tile.TileID}
+                                UPDATE CropTiles set 
+                                    HarvestsRemaining = HarvestsRemaining - 1, 
+                                    PlantTime = ${adjustedPlantTime}, 
+                                    TimeFertilizer = -1,
+                                    nextRandom = ${newRandom}
+                                WHERE UserID = @UserID AND TileID = ${tile.TileID}
                            `
 
                         }
                     } else {
                         if (activeYieldsFert) {
                             updateCropTilesQuery += `
-                                UPDATE CropTiles set HarvestsRemaining = HarvestsRemaining - 1, PlantTime = ${adjustedPlantTime}, YieldsFertilizer = YieldsFertilizer -1 WHERE UserID = @UserID AND TileID = ${tile.TileID}
+                                UPDATE CropTiles set
+                                    HarvestsRemaining = HarvestsRemaining - 1,
+                                    PlantTime = ${adjustedPlantTime}, 
+                                    YieldsFertilizer = YieldsFertilizer -1,
+                                    nextRandom = ${newRandom}
+                                WHERE UserID = @UserID AND TileID = ${tile.TileID}
                            `
 
                         } else {
                             updateCropTilesQuery += `
-                                UPDATE CropTiles set HarvestsRemaining = HarvestsRemaining - 1, PlantTime = ${adjustedPlantTime} WHERE UserID = @UserID AND TileID = ${tile.TileID}
+                                UPDATE CropTiles set
+                                    HarvestsRemaining = HarvestsRemaining - 1,
+                                    PlantTime = ${adjustedPlantTime},
+                                    nextRandom = ${newRandom}
+                                WHERE UserID = @UserID AND TileID = ${tile.TileID}
                            `
 
                         }
@@ -315,7 +323,7 @@ module.exports = async function (ws, actionData) {
                     updatedTile = {
                         TileID: tile.TileID,
                         CropID: cropID,
-                        PlantTime: adjustedPlantTime,
+                        PlantTime: adjustedPlantTime
                     }
                 }
 
@@ -360,7 +368,8 @@ module.exports = async function (ws, actionData) {
                     ...updatedTile,
                     randomPart: randomPart,
                     hasTimeFertilizer: activeFertilizer,
-                    timeFertRemainingSecs: timeFertRemainingSecs
+                    timeFertRemainingSecs: timeFertRemainingSecs,
+                    nextRandom: newRandom
                 }
                 updatedTiles.push(updatedTile)
 
