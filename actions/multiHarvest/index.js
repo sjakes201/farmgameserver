@@ -119,7 +119,7 @@ module.exports = async function (ws, actionData) {
             SELECT BT.BoostName, BT.Type, BT.BoostTarget, PB.BoostID
             FROM PlayerBoosts PB
             LEFT JOIN BoostTypes BT ON PB.BoostTypeID = BT.BoostTypeID
-            WHERE PB.UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()}
+            WHERE PB.UserID = @UserID AND (PB.StartTime + BT.Duration) > ${Date.now()} AND PB.Activated = 1
             
             ${townID ? `
             UNION
