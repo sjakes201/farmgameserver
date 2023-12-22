@@ -44,7 +44,11 @@ const handleAction = async (ws, MESSAGE_ID, action, params) => {
                 break;
             case 'profileInfo':
                 let profData = await actions.profileInfo(ws, params);
+                // Check for user playing at night for sleepy pfp
                 playingLate(ws.UserID, params?.oStamp);
+                // Check for user login streak
+                actions.refreshLoginStreak(ws, params)
+
                 ws.send(JSON.stringify({ action: 'profileInfo', MESSAGE_ID, body: profData }));
                 break;
             case 'marketSell':
@@ -313,6 +317,10 @@ const handleAction = async (ws, MESSAGE_ID, action, params) => {
             case 'buyTownBoost':
                 let btbData = await actions.buyTownBoost(ws, params)
                 ws.send(JSON.stringify({ action: 'buyTownBoost', MESSAGE_ID, body: btbData }));
+                break;
+            case 'getLoginStreakInfo':
+                let lsiData = await actions.getLoginStreakInfo(ws,params);
+                ws.send(JSON.stringify({ action: 'getLoginStreakInfo', MESSAGE_ID, body: lsiData }));
                 break;
         }
     } catch (error) {

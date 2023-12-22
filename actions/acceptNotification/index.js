@@ -1,6 +1,6 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
-
+const { giveUnlockID } = require('../../unlockFunctions');
 
 module.exports = async function (ws, actionData) {
     const UserID = ws.UserID;
@@ -25,40 +25,106 @@ module.exports = async function (ws, actionData) {
     }
 
     let connection;
+    let transaction;
     try {
         connection = await poolPromise;
-        let request = new sql.Request(connection);
+        transaction = new sql.Transaction(connection);
+        await transaction.begin()
+        let request = new sql.Request(transaction);
 
         request.input('UserID', sql.Int, UserID);
         request.input('notificationID', sql.Int, notificationID)
 
         if (processAction === "CLAIM") {
             let notificationsQuery = await request.query(`
-                SELECT Type, GoldReward FROM UserNotifications WHERE UserID = @UserID AND NotificationID = @notificationID
+                SELECT * FROM UserNotifications WHERE UserID = @UserID AND NotificationID = @notificationID
+                DELETE FROM UserNotifications WHERE UserID = @UserID AND NotificationID = @notificationID
             `);
             if (notificationsQuery.recordset.length === 0) {
+                await transaction.rollback();
                 return {
                     success: false,
                     message: "No notification with that ID"
                 }
             }
-            if (notificationsQuery.recordset[0].Type === "INDIV_TOWN_GOAL_REWARD") {
+            let notifType = notificationsQuery.recordset[0].Type;
+            if (notifType === "INDIV_TOWN_GOAL_REWARD") {
                 let goldReward = notificationsQuery.recordset[0].GoldReward;
                 request.input('goldReward', sql.Int, goldReward);
 
                 let settleQuery = await request.query(`
                     UPDATE Profiles SET Balance = Balance + @goldReward WHERE UserID = @UserID
-                    DELETE FROM UserNotifications WHERE UserID = @UserID AND NotificationID = @notificationID
                 `)
-
+                await transaction.commit()
                 return {
                     success: true,
                     goldReward: goldReward
                 }
             }
+            if (notifType === "LOGIN_STREAK_REWARD") {
+                let rewardJSON = notificationsQuery.recordset[0].Message;
+                let rewardObj = JSON.parse(rewardJSON);
+                let rewardIdentified = false;
+                let rewardData = rewardObj.reward;
+                // Iterate through all reward types that could be in the login reward, giving them if they exist
+                // Machine parts
+                if (rewardData.hasOwnProperty("Gears") || rewardData.hasOwnProperty("Bolts") || rewardData.hasOwnProperty("MetalSheets")) {
+                    let gearsCount = rewardData.Gears || 0, boltsCount = rewardData.Bolts || 0, metalSheetsCount = rewardData.MetalSheets || 0;
+                    let giveParts = await request.query(`
+                        UPDATE Inventory_PARTS SET MetalSheets = MetalSheets + ${metalSheetsCount}, Bolts = Bolts + ${boltsCount}, Gears = Gears + ${gearsCount} WHERE UserID = @UserID
+                    `)
+                    rewardIdentified = true;
+                }
+                // Fertilizer reward
+                if (rewardData.hasOwnProperty("TimeFertilizer") || rewardData.hasOwnProperty("YieldsFertilizer") || rewardData.hasOwnProperty("HarvestsFertilizer")) {
+                    let timeFertCount = rewardData.TimeFertilizer || 0, yieldFertCount = rewardData.YieldsFertilizer || 0, harvestFertCount = rewardData.HarvestsFertilizer || 0;
+                    let giveFert = await request.query(`
+                        UPDATE Inventory_EXTRA SET TimeFertilizer = TimeFertilizer + ${timeFertCount}, YieldsFertilizer = YieldsFertilizer + ${yieldFertCount}, HarvestsFertilizer = HarvestsFertilizer + ${harvestFertCount} WHERE UserID = @UserID
+                    `)
+                    rewardIdentified = true;
+                }
+                // Player boost reward
+                if (rewardData.hasOwnProperty("Boost")) {
+                    let boostIdArray = rewardData.Boost;
+                    let boostQuery = ''
+                    boostIdArray.forEach(boostID => {
+                        boostQuery += `INSERT INTO PlayerBoosts (UserID, BoostTypeID) VALUES (@UserID, ${boostID});`
+                    })
+                    let giveBoosts = await request.query(boostQuery)
+                    rewardIdentified = true;
+                }
+                // Premium currency reward
+                if (rewardData.hasOwnProperty("PremiumCurrency")) {
+                    let premiumCurrency = rewardData.PremiumCurrency;
+                    let givePremium = await request.query(`
+                        UPDATE Profiles SET premiumCurrency = premiumCurrency + ${premiumCurrency} WHERE UserID = @UserID
+                    `)
+                    rewardIdentified = true;
+                }
+                // Profile picture reward
+                if (rewardData.hasOwnProperty("pfpUnlockID")) {
+                    let pfpUnlockID = rewardData.pfpUnlockID;
+                    giveUnlockID(UserID, pfpUnlockID)
+                    rewardIdentified = true;
+                }
+
+                if (rewardIdentified) {
+                    await transaction.commit();
+                    return {
+                        success: true,
+                        reward: rewardData
+                    }
+                } else {
+                    await transaction.rollback();
+                    return {
+                        success: false,
+                        message: "Invalid login reward data"
+                    }
+                }
+            }
 
         }
-
+        await transaction.rollback();
         return {
             success: false,
             message: 'No valid notification of this type found'
