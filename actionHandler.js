@@ -322,6 +322,18 @@ const handleAction = async (ws, MESSAGE_ID, action, params) => {
                 let lsiData = await actions.getLoginStreakInfo(ws,params);
                 ws.send(JSON.stringify({ action: 'getLoginStreakInfo', MESSAGE_ID, body: lsiData }));
                 break;
+            case 'getPlayerBoostsInventory':
+                let pbiData = await actions.getPlayerBoostsInventory(ws,params);
+                ws.send(JSON.stringify({ action: 'getPlayerBoostsInventory', MESSAGE_ID, body: pbiData }));
+                break;
+            case 'buyPlayerBoost':
+                let pbooData = await actions.buyPlayerBoost(ws,params);
+                ws.send(JSON.stringify({ action: 'buyPlayerBoost', MESSAGE_ID, body: pbooData }));
+                break;
+            case 'activatePlayerBoost':
+                let apbooData = await actions.activatePlayerBoost(ws,params);
+                ws.send(JSON.stringify({ action: 'activatePlayerBoost', MESSAGE_ID, body: apbooData }));
+                break;
         }
     } catch (error) {
         console.log(error)
