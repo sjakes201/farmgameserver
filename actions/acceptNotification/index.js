@@ -48,6 +48,7 @@ module.exports = async function (ws, actionData) {
                 }
             }
             let notifType = notificationsQuery.recordset[0].Type;
+
             if (notifType === "INDIV_TOWN_GOAL_REWARD") {
                 let goldReward = notificationsQuery.recordset[0].GoldReward;
                 request.input('goldReward', sql.Int, goldReward);
@@ -61,6 +62,24 @@ module.exports = async function (ws, actionData) {
                     goldReward: goldReward
                 }
             }
+
+            if (notifType === "LEADERBOARD_PREMIUM_REWARD") {
+                let rewardJSON = notificationsQuery.recordset[0].Message;
+                let rewardObj = JSON.parse(rewardJSON);
+                let premiumCurrencyReward = rewardObj.reward;
+                request.input('premiumCurrencyReward', sql.Int, premiumCurrencyReward);
+                let res = await request.query(`
+                    UPDATE Profiles SET premiumCurrency = premiumCurrency + @premiumCurrencyReward WHERE UserID = @UserID
+                    SELECT premiumCurrency FROM Profiles WHERE UserID = @UserID
+                `)
+                let newAmount = res.recordset[0].premiumCurrency
+                await transaction.commit();
+                return {
+                    success: true,
+                    newPremiumCurrency: newAmount
+                }
+            }
+
             if (notifType === "LOGIN_STREAK_REWARD") {
                 let rewardJSON = notificationsQuery.recordset[0].Message;
                 let rewardObj = JSON.parse(rewardJSON);

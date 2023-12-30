@@ -1,6 +1,10 @@
 module.exports = {
     ALL_CROPS_QTY_1: {
-        info: "Boosts all crop yields for 10 min",
+        info: "Boosts all crop yields by guaranteed quantities for 10 min.",
+        name: "Crops Qty Tier 1",
+        cost: 25,
+        color: "purple-1",
+        type: "QTY",
         boostQtys: {
             carrot_seeds: 3,
             melon_seeds: 1,
@@ -20,7 +24,11 @@ module.exports = {
         }
     },
     ALL_CROPS_QTY_2: {
-        info: "Boosts all crop yields for 30 min",
+        info: "Boosts all crop yields by guaranteed quantities for 30 min.",
+        name: "Crops Qty Tier 2",
+        cost: 50,
+        type: "QTY",
+        color: "purple-2",
         boostQtys: {
             carrot_seeds: 3,
             melon_seeds: 1,
@@ -40,7 +48,11 @@ module.exports = {
         }
     },
     ALL_CROPS_QTY_3: {
-        info: "Boosts all crop yields for 1 hour",
+        info: "Boosts all crop yields by guaranteed quantities for 1 hour.",
+        name: "Crops Qty Tier 3",
+        cost: 75,
+        type: "QTY",
+        color: "purple-3",
         boostQtys: {
             carrot_seeds: 3,
             melon_seeds: 1,
@@ -60,7 +72,11 @@ module.exports = {
         }
     },
     ALL_ANIMALS_QTY_1: {
-        info: "Boosts all animal yields for 10 min",
+        info: "Boosts all animal yields by guaranteed quantities for 10 min.",
+        name: "Animals Qty Tier 1",
+        cost: 25,
+        type: "QTY",
+        color: "purple-1",
         boostQtys: {
             cow: 1,
             chicken: 2,
@@ -75,7 +91,11 @@ module.exports = {
         }
     },
     ALL_ANIMALS_QTY_2: {
-        info: "Boosts all animal yields for 30 min",
+        info: "Boosts all animal yields by guaranteed quantities for 30 min.",
+        name: "Animals Qty Tier 2",
+        cost: 50,
+        type: "QTY",
+        color: "purple-2",
         boostQtys: {
             cow: 1,
             chicken: 2,
@@ -90,7 +110,11 @@ module.exports = {
         }
     },
     ALL_ANIMALS_QTY_3: {
-        info: "Boosts all animal yields for 1 hour",
+        info: "Boosts all animal yields by guaranteed quantities for 1 hour.",
+        name: "Animals Qty Tier 3",
+        cost: 75,
+        type: "QTY",
+        color: "purple-3",
         boostQtys: {
             cow: 1,
             chicken: 2,
@@ -105,27 +129,51 @@ module.exports = {
         }
     },
     ALL_CROPS_TIME_1: {
-        info: "Boosts all crop growth times for 10 min",
+        info: "Boosts all crop growth times for 10 min.",
+        name: "Crops Time Tier 1",
+        cost: 25,
+        type: "TIME",
+        color: "blue-1",
         boostPercent: 0.2
     },
     ALL_CROPS_TIME_2: {
-        info: "Boosts all crop growth times for 30 min",
+        info: "Boosts all crop growth times for 30 min.",
+        name: "Crops Time Tier 2",
+        cost: 50,
+        type: "TIME",
+        color: "blue-2",
         boostPercent: 0.2
     },
     ALL_CROPS_TIME_3: {
-        info: "Boosts all crop growth times for 1 hour",
+        info: "Boosts all crop growth times for 1 hour.",
+        name: "Crops Time Tier 3",
+        cost: 75,
+        type: "TIME",
+        color: "blue-3",
         boostPercent: 0.2
     },
     ALL_ANIMALS_TIME_1: {
-        info: "Boosts all animal produce times for 10 min",
+        info: "Boosts all animals to produce times for 10 min.",
+        name: "Animals Time Tier 1",
+        cost: 25,
+        type: "TIME",
+        color: "blue-1",
         boostPercent: 0.2
     },
     ALL_ANIMALS_TIME_2: {
-        info: "Boosts all animal produce times for 30 min",
+        info: "Boosts all animals to produce times for 30 min.",
+        name: "Animals Time Tier 2",
+        cost: 50,
+        type: "TIME",
+        color: "blue-2",
         boostPercent: 0.2
     },
     ALL_ANIMALS_TIME_3: {
-        info: "Boosts all animal produce times for 1 hour",
+        info: "Boosts all animals to produce times for 1 hour.",
+        name: "Animals Time Tier 3",
+        cost: 75,
+        type: "TIME",
+        color: "blue-3",
         boostPercent: 0.2
     },
     CROP_INDIV_1: {
