@@ -5,13 +5,13 @@ module.exports = {
         exoticPermit: [10000],
         deluxePermit: [10000],
         barnCollectTimeUpgrade: [7500, 15000],
-        barnCollectQuantityUpgrade: [10000, 15000],
+        barnCollectQuantityUpgrade: [10000, 50000, 250000, 750000],
         barnCapacityUpgrade: [12000, 25000],
         coopCollectTimeUpgrade: [7500, 15000],
-        coopCollectQuantityUpgrade: [10000, 15000],
+        coopCollectQuantityUpgrade: [10000, 50000, 250000, 750000],
         coopCapacityUpgrade: [12000, 25000],
         plantGrowthTimeUpgrade: [10000, 20000],
-        plantHarvestQuantityUpgrade: [10000, 18000],
+        plantHarvestQuantityUpgrade: [10000, 50000, 250000, 1000000],
         plantNumHarvestsUpgrade: [15000, 25000],
     },
     UpgradeDescriptions: {
@@ -274,30 +274,30 @@ module.exports = {
         "llama": ["llama_wool", 3],
         "kiwi": ["kiwi_egg", 1]
     },
-    // AnimalCollectTimes3: {
-    //     "cow": [20],
-    //     "chicken": [2],
-    //     "duck": [3],
-    //     "quail": [4],
-    //     "yak": [8],
-    //     "sheep": [6],
-    //     "goat": [6],
-    //     "ostrich": [10],
-    //     "llama": [12],
-    //     "kiwi": [20]
-    // },
-    // AnimalProduceMap3: {
-    //     "cow": ["cow_milk", 3],
-    //     "chicken": ["chicken_egg", 4],
-    //     "duck": ["duck_egg", 2],
-    //     "quail": ["quail_egg", 3],
-    //     "yak": ["yak_milk", 3],
-    //     "sheep": ["sheep_wool", 3],
-    //     "goat": ["goat_milk", 2],
-    //     "ostrich": ["ostrich_egg", 1],
-    //     "llama": ["llama_wool", 3],
-    //     "kiwi": ["kiwi_egg", 1]
-    // },
+    AnimalProduceMap3: { // NOT USED EXCEPT TO GRAB PRODUCE NAMES FROM ANIMALS
+        "cow": ["cow_milk", 3],
+        "chicken": ["chicken_egg", 4],
+        "duck": ["duck_egg", 2],
+        "quail": ["quail_egg", 3],
+        "yak": ["yak_milk", 3],
+        "sheep": ["sheep_wool", 3],
+        "goat": ["goat_milk", 2],
+        "ostrich": ["ostrich_egg", 1],
+        "llama": ["llama_wool", 3],
+        "kiwi": ["kiwi_egg", 1]
+    },
+    AnimalProduceMap4: { // NOT USED EXCEPT TO GRAB PRODUCE NAMES FROM ANIMALS
+        "cow": ["cow_milk", 3],
+        "chicken": ["chicken_egg", 4],
+        "duck": ["duck_egg", 2],
+        "quail": ["quail_egg", 3],
+        "yak": ["yak_milk", 3],
+        "sheep": ["sheep_wool", 3],
+        "goat": ["goat_milk", 2],
+        "ostrich": ["ostrich_egg", 1],
+        "llama": ["llama_wool", 3],
+        "kiwi": ["kiwi_egg", 1]
+    },
 
 
 }

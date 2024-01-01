@@ -14,7 +14,7 @@ const getCurrentSeason = () => {
 function calcCropYield(nextRandom, seedName, yieldsUpgradeTier, yieldsFertilizer, activeBoosts) {
     if (!(typeof nextRandom === "number" && !isNaN(nextRandom) && nextRandom >= 0 && nextRandom <= 1)) throw new Error("nextRandom must be a decimal number in [0, 1]")
     if (!(typeof seedName === "string" && seedName in YIELDS.cropProbabilities.yieldsUpgradeTier0)) throw new Error("seedName must be an existing seed name as a string")
-    if (!(typeof yieldsUpgradeTier === "number" && yieldsUpgradeTier >= 0 && yieldsUpgradeTier <= 2)) throw new Error("yieldsUpgradeTier must be an integer in [0, 2]")
+    if (!(typeof yieldsUpgradeTier === "number" && yieldsUpgradeTier >= 0 && yieldsUpgradeTier <= 4)) throw new Error("yieldsUpgradeTier must be an integer in [0, 4]")
     if (!(typeof yieldsFertilizer === "boolean")) throw new Error("yieldsFertilizer must be a boolean")
     if (!(Array.isArray(activeBoosts))) throw new Error("activeBoosts must be an array of boost objects")
 
@@ -58,7 +58,7 @@ function calcCropYield(nextRandom, seedName, yieldsUpgradeTier, yieldsFertilizer
 function calcProduceYield(animalType, yieldsUpgradeTier, happiness, nextRandom, activeBoosts) {
     if (!(typeof nextRandom === "number" && !isNaN(nextRandom) && nextRandom >= 0 && nextRandom <= 1)) throw new Error("nextRandom must be a decimal number in [0, 1]")
     if (!(typeof animalType === "string" && animalType in YIELDS.produceProbabilities.yieldsUpgradeTier0)) throw new Error("animalType must be an existing seed name as a string")
-    if (!(typeof yieldsUpgradeTier === "number" && yieldsUpgradeTier >= 0 && yieldsUpgradeTier <= 2)) throw new Error("yieldsUpgradeTier must be an integer in [0, 2]")
+    if (!(typeof yieldsUpgradeTier === "number" && yieldsUpgradeTier >= 0 && yieldsUpgradeTier <= 4)) throw new Error("yieldsUpgradeTier must be an integer in [0, 4]")
     if (!(typeof happiness === "number" && !isNaN(happiness))) throw new Error("happiness must be a decimal number")
     if (!(Array.isArray(activeBoosts))) throw new Error("activeBoosts must be an array of boost objects")
 
