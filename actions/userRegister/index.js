@@ -110,7 +110,7 @@ module.exports = async function (ws, actionData) {
         `)
         await transaction.commit();
         //Refresh auth token
-        const token = jwt.sign({ UserID: UserID }, process.env.JWT_KEY, { expiresIn: "720h" });
+        const token = jwt.sign({ UserID: UserID }, process.env.JWT_KEY, { expiresIn: "2190h" });
         return {
             status: 200,
             auth: true,
