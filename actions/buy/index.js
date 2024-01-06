@@ -2,7 +2,7 @@ const CONSTANTS = require('../shared/CONSTANTS');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 
-const SEED_LIMIT = 250;
+const SEED_LIMIT = 300;
 
 
 
