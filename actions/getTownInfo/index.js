@@ -67,7 +67,7 @@ module.exports = async function (ws, actionData) {
         let myRoleID = moreTownInfo.recordsets[0].filter((obj) => {
             return obj.UserID === UserID
         })?.[0]?.RoleID;
-        
+
         let indivGoals = moreTownInfo.recordsets?.[1]
         let goals = [moreTownInfo.recordsets[2][0].goal_1, moreTownInfo.recordsets[2][0].goal_2, moreTownInfo.recordsets[2][0].goal_3, moreTownInfo.recordsets[2][0].goal_4, moreTownInfo.recordsets[2][0].goal_5, moreTownInfo.recordsets[2][0].goal_6, moreTownInfo.recordsets[2][0].goal_7, moreTownInfo.recordsets[2][0].goal_8]
         let progresses = [moreTownInfo.recordsets[2][0].progress_1, moreTownInfo.recordsets[2][0].progress_2, moreTownInfo.recordsets[2][0].progress_3, moreTownInfo.recordsets[2][0].progress_4, moreTownInfo.recordsets[2][0].progress_5, moreTownInfo.recordsets[2][0].progress_6, moreTownInfo.recordsets[2][0].progress_7, moreTownInfo.recordsets[2][0].progress_8]
@@ -95,12 +95,12 @@ module.exports = async function (ws, actionData) {
 
         let membersInfoQuery = await request.query(`
         SELECT UserID, Username, LastSeen FROM Logins ${userWhereQuery}
-        SELECT UserID, XP FROM Profiles ${userWhereQuery}
+        SELECT UserID, XP, profilePic FROM Profiles ${userWhereQuery}
         SELECT RoleID, contributedTownXP, UserID FROM TownMembers ${userWhereQuery}
         SELECT UserID, progress_1, progress_2, progress_3, progress_4, progress_5, progress_6, progress_7, progress_8 FROM TownContributions ${userWhereQuery}
         SELECT unclaimed_1, unclaimed_2, unclaimed_3, unclaimed_4, unclaimed_5, unclaimed_6, unclaimed_7, unclaimed_8 FROM TownContributions WHERE UserID = @UserID
         `);
-
+   
         let playersData = []
         membersInfoQuery.recordsets[0].forEach((member) => {
             // find member in second set, will not always be at same index
@@ -137,6 +137,7 @@ module.exports = async function (ws, actionData) {
             let playerData = {
                 username: member.Username,
                 xp: targetPlayerInfo.XP,
+                profilePic: targetPlayerInfo?.profilePic,
                 roleID: roleID
             }
             // Only provide contributions if they are in the town
