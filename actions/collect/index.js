@@ -4,7 +4,7 @@ const { poolPromise } = require('../../db');
 const CONSTANTS = require('../shared/CONSTANTS');
 const UPGRADES = require('../shared/UPGRADES');
 const townGoalContribute = require(`../shared/townGoalContribute`);
-const TOWNINFO = require('../shared/TOWNINFO');
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 const TOWNSHOP = require('../shared/TOWNSHOP')
 const BOOSTSINFO = require('../shared/BOOSTSINFO')
 const { calcProduceYield } = require('../shared/farmHelpers')
@@ -24,6 +24,11 @@ module.exports = async function (ws, actionData) {
     let AnimalID = actionData?.AnimalID;
     // GET USER ID
     const UserID = ws.UserID;
+    let page = actionData?.usi?.p;
+    let validActionPage = page === "/animals";
+    if(!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
     // Used later in townGoalContribute
     let resultingGood;
     let resultingQuantity;

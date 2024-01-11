@@ -73,7 +73,7 @@ function setupWebSocket(wss) {
                     let user = connectedUsers.find(u => u.UserID === ws.UserID);
                     if (user) user.lastActive = Date.now()
 
-                    if(checkMessageRateLimit(user.UserID)) {
+                    if (checkMessageRateLimit(user.UserID)) {
                         ws.close(1008, "Server message rate limit")
                         return
                     }
@@ -100,6 +100,29 @@ function setupWebSocket(wss) {
         } catch (error) {
             console.log(error)
         }
+    });
+
+    wss.on('connection', function connection(ws) {
+        ws.isAlive = true;
+
+        ws.on('pong', function heartbeat() {
+            ws.isAlive = true;
+            console.log('received a pong!')
+        });
+
+        // Send a ping to the client every 30 seconds
+        const interval = setInterval(function ping() {
+            wss.clients.forEach(function each(client) {
+                if (client.isAlive === false) return client.terminate();
+
+                client.isAlive = false;
+                client.ping();
+            });
+        }, 30000);
+
+        ws.on('close', function clear() {
+            clearInterval(interval);
+        });
     });
 }
 

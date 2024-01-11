@@ -2,11 +2,17 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const ANIMALINFO = require('../shared/ANIMALINFO');
 const TOWNSHOP = require('../shared/TOWNSHOP')
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 
 
 module.exports = async function (ws, actionData) {
 
     const UserID = ws.UserID;
+    let page = actionData?.usi?.p;
+    let validActionPage = page === "/animals";
+    if(!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
 
 
     const animalID = actionData.animalID;

@@ -1,11 +1,16 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const BOOSTSINFO = require('../shared/BOOSTSINFO');
-const { sendTownUsersData } = require('../../broadcastFunctions')
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 
 module.exports = async function (ws, actionData) {
 
     const UserID = ws.UserID;
+    let page = actionData?.usi?.p;
+    let validActionPage = page === "/shop";
+    if(!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
     const boostName = actionData.boostName;
     if (!(boostName in BOOSTSINFO)) {
         return {
