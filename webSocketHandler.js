@@ -107,7 +107,6 @@ function setupWebSocket(wss) {
 
         ws.on('pong', function heartbeat() {
             ws.isAlive = true;
-            console.log('received a pong!')
         });
 
         // Send a ping to the client every 30 seconds

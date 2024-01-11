@@ -4,7 +4,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -19,6 +19,7 @@ const SERVER_ID = '1141813454244687882';
 
 const { poolPromise } = require('../db');
 const { pokeUser } = require('./discordPoke')
+const sql = require('mssql');
 
 
 
@@ -89,6 +90,167 @@ client.once('ready', () => {
     }
 })
 
+function getDirectImageLink(fileName) {
+    switch (fileName) {
+        case "animal_lover":
+            return "https://drive.google.com/uc?id=1AN_gRilYzqCDRIfGdGZGmba6V1OGKf-m";
+        case "baseball_player":
+            return "https://drive.google.com/uc?id=1l0cfroCm63GoyLkevWtoe5M7a3cuvhb1";
+        case "beach_guy":
+            return "https://drive.google.com/uc?id=17SfRYF3zy0qAqDcNFp3JS7gG5h-dZWIr";
+        case "blue_scythe":
+            return "https://drive.google.com/uc?id=1O5GkTijrTnNR6NWrvqlfzIh8cCiSqJbJ";
+        case "chef":
+            return "https://drive.google.com/uc?id=1o_4GM1hVxPu1ZsCEA2E9hHZfnphu2A_z";
+        case "chicken_emperor":
+            return "https://drive.google.com/uc?id=1SgJqoZo8bofrN1E4Fs0TyuK-6KKuvtiI";
+        case "chicken_friend":
+            return "https://drive.google.com/uc?id=1h7GwWMJ4IfVL7gIpdWuyAzq8gqU_NnNV";
+        case "cool_guy":
+            return "https://drive.google.com/uc?id=14JERegch627J7Ub1mTsjuvQuhEImMMIw";
+        case "cowboy":
+            return "https://drive.google.com/uc?id=1B7aTTW3FOBQBrj57XLvzqO3mIjfZe3lP";
+        case "cow_friend":
+            return "https://drive.google.com/uc?id=1lk5TDgFMS2xafFGBxA-t5r04Va_4KmwI";
+        case "deluxe_owner":
+            return "https://drive.google.com/uc?id=1Jqe6SoaGTUFm78bd8ltO-i7OYA19cvSu";
+        case "did_poke":
+            return "https://drive.google.com/uc?id=1PraOsSqf-oWMan-iGzDYkWVmbuEV35L9";
+        case "doctor_stethoscope":
+            return "https://drive.google.com/uc?id=1pg_CtWEfrmueS8SXICtM9sVxejJ8Fqvt";
+        case "dragon_man":
+            return "https://drive.google.com/uc?id=1bRTV-4Hg_m4A9Z_oA7Nxcdadc-18W8No";
+        case "exotic_owner":
+            return "https://drive.google.com/uc?id=1U8E3Lf5tBnbr7LsYjQpFI54kYx8Evkgq";
+        case "famous_minutes":
+            return "https://drive.google.com/uc?id=1t5LdpCeFMJaCCZhcO4UHgUzBQcaqlAkO";
+        case "farmer_hoe":
+            return "https://drive.google.com/uc?id=1bsl8KS2mohs8Ecb4b1_ir7gVOeyTAs8z";
+        case "fighter_blue":
+            return "https://drive.google.com/uc?id=1R6Na9S_N-o-GWVw7T_xJ-24___gBDDL7";
+        case "fighter_purple":
+            return "https://drive.google.com/uc?id=17TY5Rawoqb_mfdSYFy9DVENnmp0wT1J7";
+        case "fighter_red":
+            return "https://drive.google.com/uc?id=15hIaF42GdJ_5XWrYH_XNsoSHkGGI4sb9";
+        case "football_player":
+            return "https://drive.google.com/uc?id=1B8UwpYxN9o2EEMLYjUByXibgvc9jiAin";
+        case "grape_lord":
+            return "https://drive.google.com/uc?id=1IJexMa8bmDFuapQLSRjjU-JTwluOVD4u";
+        case "grateful_farmer":
+            return "https://drive.google.com/uc?id=1vaBHfb1mNqiUy3op-ppTT_8Em2EzY7-c";
+        case "hacker_guy":
+            return "https://drive.google.com/uc?id=1vMwgSDiYBVPkAta0BbPChv7cn_kFheoQ";
+        case "helmet_warrior":
+            return "https://drive.google.com/uc?id=1FAjqykcQorkZimak-jhV9ZTtbqlTQqtN";
+        case "hold_corn":
+            return "https://drive.google.com/uc?id=1YOTN1qkDdt-SbG6Wis41TwmaEGLHU2NH";
+        case "hold_heart":
+            return "https://drive.google.com/uc?id=1c3zMfP1pGAByXHRq5WVHEV1xEEejTaqP";
+        case "hold_pitchfork":
+            return "https://drive.google.com/uc?id=1HDJcahkS9IN03MrHfGouTWOUKPxaU3oz";
+        case "king":
+            return "https://drive.google.com/uc?id=1m3jixdm-EoPJtq_p8v7GfRGEIB8cY0h7";
+        case "link_discord":
+            return "https://drive.google.com/uc?id=1ntG1eSvGSPIdf-1rWLYthFxArhlO98NA";
+        case "machine_hammer":
+            return "https://drive.google.com/uc?id=1SuOOHApcw7tBIR7tqtt1o7quxZ02NR9n";
+        case "market_analyst":
+            return "https://drive.google.com/uc?id=1YlZdrwbB5ZPsQHKvddtdZtahskTOd9v0";
+        case "ninja":
+            return "https://drive.google.com/uc?id=1PVXo_3cU5eRsX1LTPO6J2uyLtBIYV7Re";
+        case "reg_blue":
+            return "https://drive.google.com/uc?id=1SmZplbeTprY7ofm1-6-D-Rs6LCYtHbXK";
+        case "reg_green":
+            return "https://drive.google.com/uc?id=18US0_GxEJnP8EITBh5ice558MRk57LVi";
+        case "reg_maroon":
+            return "https://drive.google.com/uc?id=17ceAAwGE-P_OdLtDafZjw2v0EhdgnGvu";
+        case "reg_purple":
+            return "https://drive.google.com/uc?id=1Fgpq71zolYXkL68b50X7t0NEk-lnh-kq";
+        case "rich_1":
+            return "https://drive.google.com/uc?id=1wgbJ16KxD8b-Lj2BovcC1GmmZb3wASAm";
+        case "rich_2":
+            return "https://drive.google.com/uc?id=17aPXcD23_z02cluxhN11eB576pWtFN3Y";
+        case "sleepy_bro":
+            return "https://drive.google.com/uc?id=16_7SMX11La0vpNuhF-kG6FmGffZg1mdd";
+        case "soccer_player":
+            return "https://drive.google.com/uc?id=1dJebnsqwhXj2f5AF2iu_kjY5NYT8rcWj";
+        case "spanish_dueler":
+            return "https://drive.google.com/uc?id=1IJexMa8bmDFuapQLSRjjU-JTwluOVD4u";
+        case "visor_robot":
+            return "https://drive.google.com/uc?id=1vaBHfb1mNqiUy3op-ppTT_8Em2EzY7-c";
+        case "wizard":
+            return "https://drive.google.com/uc?id=1vMwgSDiYBVPkAta0BbPChv7cn_kFheoQ";
+        case "zeus":
+            return "https://drive.google.com/uc?id=1FAjqykcQorkZimak-jhV9ZTtbqlTQqtN";
+        default:
+            return "https://drive.google.com/uc?id=17ceAAwGE-P_OdLtDafZjw2v0EhdgnGvu"; // default to homie
+    }
+}
+
+
+async function randomPoke() {
+    try {
+        const connection = await poolPromise;
+        let res = await connection.query(`
+            SELECT TOP 1 UserID FROM Logins WHERE isGuest = 0 ORDER BY NEWID();
+        `)
+        let UserID = res.recordset[0].UserID;
+        if (!UserID) return false;
+        let request = new sql.Request(connection);
+        request.input('UserID', sql.Int, UserID);
+        let pokeRes = await request.query(`
+            UPDATE Profiles SET receivedPokes = receivedPokes + 1 WHERE UserID = @UserID;
+            SELECT Username FROM Logins WHERE UserID = @UserID
+        `)
+        let chosenUser = pokeRes.recordset[0].Username;
+        return chosenUser;
+    } catch (error) {
+        console.log(error)
+        return false;
+    }
+}
+
+async function randomFeed() {
+    try {
+        const connection = await poolPromise;
+        let res = await connection.query(`
+            SELECT TOP 1 A.Animal_ID, L.Username, L.UserID
+            FROM Animals A
+            LEFT JOIN Logins L ON A.UserID = L.UserID
+            WHERE L.isGuest = 0 
+            ORDER BY NEWID();
+        `)
+        let animalID = res.recordset[0].Animal_ID;
+        let username = res.recordset[0].Username;
+        let UserID = res.recordset[0].UserID;
+
+        let request = new sql.Request(connection);
+        request.input('animalID', sql.Int, animalID);
+        request.input('UserID', sql.Int, UserID);
+
+        let feedRes = await request.query(`
+            UPDATE Animals 
+            SET 
+                Happiness = Happiness + 0.05
+            WHERE Animal_ID = @animalID AND UserID = @UserID
+
+            SELECT
+                Happiness, Animal_type
+            FROM Animals
+            WHERE Animal_ID = @animalID AND UserID = @UserID
+        `)
+        return {
+            Animal_type: feedRes.recordset[0].Animal_type,
+            newHappiness: feedRes.recordset[0].Happiness,
+            targetUsername: username
+        }
+    } catch (error) {
+        console.log(error)
+        return false;
+    }
+
+}
+
 client.on('messageCreate', async (message) => {
     try {
         // Check if the message is from a bot (to prevent infinite loops or reactions to other bots)
@@ -108,16 +270,58 @@ client.on('messageCreate', async (message) => {
 
         // '!' is for bot command
         if (msgText.includes('!')) {
-            if (msgText.includes('poke') && msgText.split(" ")) {
+            if (msgText.includes('poke') && !(msgText.includes('randompoke')) && msgText.split(" ")) {
                 let targetUsername = msgText.split(" ")[1];
                 let pokeResult = await pokeUser(msgSenderID, targetUsername);
                 message.reply(pokeResult.message)
             }
+
+            if (msgText.includes("profile")) {
+                let targetUsername = msgText.split(" ")[1];
+                let profileResult = await getProfileData(targetUsername);
+                if (!profileResult) {
+                    message.reply(`Profile for ${targetUsername} not found. Use their in-game name.`)
+                    return;
+                }
+                const profileEmbed = new EmbedBuilder()
+                    .setColor('#0099ff') // Set the color of the embed
+                    .setTitle(`${profileResult.Username}'s Profile`) // Set the title of the embed
+                    .setDescription(`[View on Farm Game](https://farmgame.live/profile/${profileResult.Username})`)
+                    .setThumbnail(getDirectImageLink(profileResult.profilePic))
+                    .addFields(
+                        { name: 'Town', value: profileResult.townName || 'None', inline: true },
+                        { name: 'Balance', value: `$${profileResult.Balance.toLocaleString()}`, inline: true },
+                        { name: 'XP', value: profileResult.XP.toLocaleString(), inline: true },
+                        { name: 'Received Pokes', value: profileResult.receivedPokes.toString(), inline: true },
+                        { name: 'Total Contributed Town XP', value: profileResult.totalContributedTownXP.toLocaleString(), inline: true }
+                    )
+                    .setTimestamp()
+
+                // Send the embed to the same channel as the message
+                message.channel.send({ embeds: [profileEmbed] });
+            }
+
+            if (msgText.includes("randompoke")) {
+                let poked = await randomPoke();
+                if (!poked) {
+                    message.reply('Error :(');
+                    return;
+                }
+                message.reply(`
+                    Poked ${poked}!
+                `)
+            }
+
+            if (msgText.includes("randomfeed")) {
+                let fed = await randomFeed();
+                if(fed) {
+                    message.reply(`Fed ${fed.targetUsername}'s ${fed.Animal_type}! Happiness is now ${fed.newHappiness.toFixed(2) * 100}%`)
+                }
+            }
         }
 
-        // You can also add more patterns or commands here
-        // ...
     } catch (error) {
+        console.log(error)
     }
 });
 
@@ -195,7 +399,7 @@ async function assignAllTimeLeaderboardRoles() {
                 if (!user[category] || user[category] > 3) continue;
                 let member = guild.members.cache.get(user.DiscordID)
                 if (member === undefined) {
-                    member = await guild.members.fetch(user.DiscordID).catch(err => {});
+                    member = await guild.members.fetch(user.DiscordID).catch(err => { });
                 }
                 const role = guild.roles.cache.find(r => r.name === roleName);
                 if (member && role) {
@@ -258,8 +462,34 @@ async function removeRoleFromAllMembers(roleName, allMembers) {
         if (member.roles.cache.has(role.id)) {  // Check if member has the role
             try {
                 await member.roles.remove(role);
-            } catch (error) {            }
+            } catch (error) { }
         }
+    }
+}
+
+async function getProfileData(username) {
+
+    try {
+        const connection = await poolPromise;
+        let request = new sql.Request(connection);
+        console.log(username)
+        request.input('username', sql.VarChar(32), username);
+        let res = await request.query(`
+            SELECT 
+                L.Username, P.Balance, P.XP, P.receivedPokes, P.totalContributedTownXP, P.profilePic, T.townName     
+            FROM Logins L 
+            LEFT JOIN Profiles P ON P.UserID = L.UserID
+            LEFT JOIN TownMembers TM ON TM.UserID = L.UserID
+            LEFT JOIN Towns T ON T.townID = TM.townID
+            WHERE L.Username = @username
+        `)
+        if (res.recordset.length === 0) {
+            return false
+        }
+        return res.recordset[0]
+    } catch (error) {
+        console.log(error)
+        return false
     }
 }
 
