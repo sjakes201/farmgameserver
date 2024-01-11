@@ -24,7 +24,7 @@ async function pokeUser(msgSenderID, targetUsername) {
         }
         if(targetQuery.recordsets[0].length === 0) {
             return {
-                message: `User ${targetUsername} does not exist!`
+                message: `User ${targetUsername} not found. User their in-game name.`
             }
         }
 
