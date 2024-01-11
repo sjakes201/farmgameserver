@@ -2,10 +2,18 @@ const CONSTANTS = require('../shared/CONSTANTS');
 const UPGRADES = require('../shared/UPGRADES');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 
 // returns array of updated tiles
 module.exports = async function (ws, actionData) {
     const UserID = ws.UserID;
+
+    // usi is user scripting info, p is page
+    let page = actionData?.usi?.p;
+    let validActionPage = page === "/" || page === "/plants"
+    if(!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
 
     // tiles is array of objects with tileID and seedName [{tileID: 2}]
     let tiles = actionData.tiles, seed = actionData.seedName, cropID = CONSTANTS.ProduceIDs[seed];
@@ -23,6 +31,10 @@ module.exports = async function (ws, actionData) {
         };
     }
 
+    if(tiles.length > 9) {
+        reportInvalidAction(UserID, "multiToolCount")
+    }
+    
     let connection;
     let transaction;
 

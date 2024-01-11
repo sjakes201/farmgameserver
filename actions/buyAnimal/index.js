@@ -1,6 +1,7 @@
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const CONSTANTS = require('../shared/CONSTANTS');
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 
 /*
     Should they not be able to purchase (even if frontend tries to stop) when not unlocked, or just collect? 
@@ -33,6 +34,12 @@ module.exports = async function (ws, actionData) {
 
     // GET USERID
     const UserID = ws.UserID;
+    let page = actionData?.usi?.p;
+    console.log(page)
+    let validActionPage = page === "/shop";
+    if(!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
 
     // CHECK ANIMALTYPE
     if (!(animal_type in CONSTANTS.AnimalTypes)) {

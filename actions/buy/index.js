@@ -1,6 +1,7 @@
 const CONSTANTS = require('../shared/CONSTANTS');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 
 const SEED_LIMIT = 300;
 
@@ -29,7 +30,12 @@ const calcLevel = (XP) => {
 module.exports = async function (ws, actionData) {
     // GET USERID
     const UserID = ws.UserID;
-
+    // usi is user scripting info, p is page
+    let page = actionData?.usi?.p;
+    let validActionPage = page === "/shop";
+    if (!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
 
     // GET INPUTS   
     let Item = actionData.item, count = parseInt(actionData.count);

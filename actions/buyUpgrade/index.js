@@ -1,10 +1,16 @@
 const UPGRADES = require('../shared/UPGRADES');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 
 module.exports = async function (ws, actionData) {
     // GET USERID
     const UserID = ws.UserID;
+    let page = actionData?.usi?.p;
+    let validActionPage = page === "/shop";
+    if(!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
     const upgrade = actionData.upgrade;
     const tier = actionData.tier;
 

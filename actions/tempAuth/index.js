@@ -129,7 +129,7 @@ module.exports = async function (ws, actionData) {
 
 
 
-        const token = jwt.sign({ UserID: guestUserID }, process.env.JWT_KEY, { expiresIn: "2190h" });
+        const token = jwt.sign({ UserID: guestUserID }, process.env.JWT_KEY, { expiresIn: "90d" });
 
         return {
             auth: true,

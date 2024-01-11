@@ -70,7 +70,7 @@ module.exports = async function (ws, actionData) {
         }
 
         // CREATE USER AUTH TOKEN AND SET ENCODED IN HEADER
-        const token = jwt.sign({ UserID: stored_ID }, process.env.JWT_KEY, { expiresIn: '2190hh' });
+        const token = jwt.sign({ UserID: stored_ID }, process.env.JWT_KEY, { expiresIn: '90d' });
         return  {
             status: 200,
             auth: true,

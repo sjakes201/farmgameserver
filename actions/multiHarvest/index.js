@@ -8,6 +8,7 @@ const sql = require('mssql');
 const { poolPromise } = require('../../db');
 const BOOSTSINFO = require('../shared/BOOSTSINFO')
 const { calcCropYield } = require('../shared/farmHelpers')
+const reportInvalidAction = require('../../serverActions/reportInvalidAction/index.js');
 
 const townGoalContribute = require(`../shared/townGoalContribute`);
 
@@ -34,12 +35,22 @@ module.exports = async function (ws, actionData) {
 
     const UserID = ws.UserID;
 
+    // usi is user scripting info, p is page
+    let page = actionData?.usi?.p;
+    let validActionPage = page === "/" || page === "/plants"
+    if(!validActionPage) {
+        reportInvalidAction(UserID, "wrongActionPage");
+    }
+
     // Multitile input: receive an array of objects, one object per tile, each tile has tileID: which is the tile id [{tileID: 2}, {tileID: 4}, {tileID: 5}]
     const tiles = actionData.tiles;
     if (tiles.length <= 0) {
         return {
             message: "Invalid multiHarvest tiles count"
         };
+    }
+    if(tiles.length > 9) {
+        reportInvalidAction(UserID, "multiToolCount")
     }
     /*
         Check whether user has this feature unlocked (maybe later also use for batching) and if they are within 9 tile limit
@@ -205,7 +216,7 @@ module.exports = async function (ws, actionData) {
                 let crop_qty = calcCropYield(nextRandom, seedName, upgrades.plantHarvestQuantityUpgrade, activeYieldsFert, activeBoosts)
 
                 // increment XP sum and crops sum
-                xpSum += CONSTANTS.XP[crop_name]
+                xpSum += CONSTANTS.XP[crop_name];
 
                 cropsSum[crop_name] = (cropsSum[crop_name] || 0) + crop_qty;
 
