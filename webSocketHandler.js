@@ -103,18 +103,21 @@ function setupWebSocket(wss) {
     });
 
     wss.on('connection', function connection(ws) {
-        ws.isAlive = true;
+        ws.lastAlive = Date.now();
 
         ws.on('pong', function heartbeat() {
-            ws.isAlive = true;
+            ws.lastAlive = Date.now();
         });
 
         // Send a ping to the client every 30 seconds
         const interval = setInterval(function ping() {
             wss.clients.forEach(function each(client) {
-                if (client.isAlive === false) return client.terminate();
+                if (client.lastAlive + (30 * 60 * 1000) < Date.now()) {
+                    console.log("terminating ", client.UserID);
+                    return client.terminate();
+                }
+                console.log("pinging ", client.UserID)
 
-                client.isAlive = false;
                 client.ping();
             });
         }, 30000);
