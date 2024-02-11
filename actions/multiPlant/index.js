@@ -17,7 +17,6 @@ module.exports = async function (ws, actionData) {
 
     // tiles is array of objects with tileID and seedName [{tileID: 2}]
     let tiles = actionData.tiles, seed = actionData.seedName, cropID = CONSTANTS.ProduceIDs[seed];
-
     if (!(seed in UPGRADES.GrowthTimes0)) {
         console.log(`INVALID SEED ${seed}`);
         return {
@@ -88,7 +87,6 @@ module.exports = async function (ws, actionData) {
             }
         })
         let tilesResult = await request.query(updateTilesQuery);
-
         let seedQuery = await request.query(`
             UPDATE Inventory_SEEDS SET ${seed} = ${seed} - ${plantableCount} WHERE UserID = @UserID
             SELECT ${seed} FROM Inventory_SEEDS WHERE UserID = @UserID

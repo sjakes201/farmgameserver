@@ -2,6 +2,8 @@ const CONSTANTS = require('../../actions/shared/CONSTANTS');
 const sql = require('mssql');
 const { poolPromise } = require('../../db');
 
+const ENABLE_SPECIAL_SEEDS = true;
+
 module.exports = async function (leaderboardCycle) {
     // if (process.env.NODE_ENV === 'TESTING') {
     //     console.log("TESTING ENV, NOT RUNNING")
@@ -30,6 +32,10 @@ module.exports = async function (leaderboardCycle) {
         cycle4: ["yak_milk", "sheep_wool", "goat_milk", "ostrich_egg", "llama_wool", "kiwi_egg"]
     }
 
+    if(ENABLE_SPECIAL_SEEDS) {
+        allCategories.special1 = 1;
+        leaderboardCycles.cycle1.push("special1");
+    }
     try {
         connection = await poolPromise;
 
