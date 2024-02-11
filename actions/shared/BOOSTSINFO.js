@@ -20,7 +20,8 @@ module.exports = {
             blueberry_seeds: 4,
             grape_seeds: 4,
             oats_seeds: 3,
-            strawberry_seeds: 4
+            strawberry_seeds: 4,
+            special1_seeds: 3
         }
     },
     ALL_CROPS_QTY_2: {
@@ -44,7 +45,8 @@ module.exports = {
             blueberry_seeds: 4,
             grape_seeds: 4,
             oats_seeds: 3,
-            strawberry_seeds: 4
+            strawberry_seeds: 4,
+            special1_seeds: 3
         }
     },
     ALL_CROPS_QTY_3: {
@@ -68,7 +70,8 @@ module.exports = {
             blueberry_seeds: 4,
             grape_seeds: 4,
             oats_seeds: 3,
-            strawberry_seeds: 4
+            strawberry_seeds: 4,
+            special1_seeds: 3
         }
     },
     ALL_ANIMALS_QTY_1: {
@@ -153,7 +156,7 @@ module.exports = {
         boostPercent: 0.2
     },
     ALL_ANIMALS_TIME_1: {
-        info: "Boosts all animals to produce times for 10 min.",
+        info: "Boosts all animals produce times for 10 min.",
         name: "Animals Time Tier 1",
         cost: 25,
         type: "TIME",
@@ -161,7 +164,7 @@ module.exports = {
         boostPercent: 0.2
     },
     ALL_ANIMALS_TIME_2: {
-        info: "Boosts all animals to produce times for 30 min.",
+        info: "Boosts all animals produce times for 30 min.",
         name: "Animals Time Tier 2",
         cost: 50,
         type: "TIME",
@@ -169,7 +172,7 @@ module.exports = {
         boostPercent: 0.2
     },
     ALL_ANIMALS_TIME_3: {
-        info: "Boosts all animals to produce times for 1 hour.",
+        info: "Boosts all animals produce times for 1 hour.",
         name: "Animals Time Tier 3",
         cost: 75,
         type: "TIME",
@@ -193,7 +196,8 @@ module.exports = {
             blueberry_seeds: 4,
             grape_seeds: 4,
             oats_seeds: 3,
-            strawberry_seeds: 4
+            strawberry_seeds: 4,
+            special1_seeds: 3
         }
     },
     ANIMAL_INDIV_1: {
@@ -228,7 +232,8 @@ module.exports = {
             blueberry_seeds: 0.2,
             grape_seeds: 0.2,
             oats_seeds: 0.2,
-            strawberry_seeds: 0.2
+            strawberry_seeds: 0.2,
+            special1_seeds: 3
         }
     },
     ANIMAL_INDIV_TIME_1: {
@@ -247,7 +252,6 @@ module.exports = {
         }
     },
     townBoostsInfo: {
-        // JUST REDUNDANT FOR TOWNS FUNCTIONS, KEEP THIS SYNCED
         CARROT_1: { cost: 2600, type: "QTY", duration: "1 DAY", qty: 3 },
         CAULIFLOWER_1: { cost: 2600, type: "QTY", duration: "1 DAY", qty: 1 },
         MELON_1: { cost: 2600, type: "QTY", duration: "1 DAY", qty: 1 },
@@ -274,7 +278,6 @@ module.exports = {
         LLAMA_1: { cost: 2600, type: "QTY", duration: "1 DAY", qty: 2 },
         KIWI_1: { cost: 2600, type: "QTY", duration: "1 DAY", qty: 1 },
 
-
         CARROT_TIME_1: { cost: 1600, type: "TIME", duration: "1 DAY", boostPercent: 0.2 },
         CAULIFLOWER_TIME_1: { cost: 1600, type: "TIME", duration: "1 DAY", boostPercent: 0.2 },
         MELON_TIME_1: { cost: 1600, type: "TIME", duration: "1 DAY", boostPercent: 0.2 },
@@ -300,6 +303,5 @@ module.exports = {
         OSTRICH_TIME_1: { cost: 1600, type: "TIME", duration: "1 DAY", boostPercent: 0.2 },
         LLAMA_TIME_1: { cost: 1600, type: "TIME", duration: "1 DAY", boostPercent: 0.2 },
         KIWI_TIME_1: { cost: 1600, type: "TIME", duration: "1 DAY", boostPercent: 0.2 },
-
-    }
+    },
 }

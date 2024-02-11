@@ -15,7 +15,8 @@ module.exports = {
             blueberry_seeds: [0, 0, 0.15, 0.2, 0.20, 0.3, 0.15],
             grape_seeds: [0, 0, 0.275, 0.275, 0.375, 0.075],
             oats_seeds: [0, 0, 0.25, 0.45, 0.3],
-            strawberry_seeds: [0, 0, 0.25, 0.5, 0.25]
+            strawberry_seeds: [0, 0, 0.25, 0.5, 0.25],
+            special1_seeds: [0, 0, 0.25, 0.5, 0.25],
         },
         yieldsUpgradeTier1: {
             carrot_seeds: [0, 0, 0.22, 0.77, 0.01],
@@ -32,7 +33,8 @@ module.exports = {
             blueberry_seeds: [0, 0, 0, 0.2, 0.2, 0.3, 0.3],
             grape_seeds: [0, 0, 0.075, 0.175, 0.5, 0.25],
             oats_seeds: [0, 0, 0.15, 0.30, 0.55],
-            strawberry_seeds: [0, 0, 0.1, 0.45, 0.45]
+            strawberry_seeds: [0, 0, 0.1, 0.45, 0.45],
+            special1_seeds: [0, 0, 0.05, 0.4, 0.55],
         },
         yieldsUpgradeTier2: {
             carrot_seeds: [0, 0, 0.05, 0.35, 0.6],
@@ -49,7 +51,8 @@ module.exports = {
             blueberry_seeds: [0, 0, 0, 0.05, 0.1, 0.45, 0.4],
             grape_seeds: [0, 0, 0, 0.05, 0.4, 0.55],
             oats_seeds: [0, 0, 0, 0.45, 0.4, 0.15],
-            strawberry_seeds: [0, 0, 0.05, 0.20, 0.75]
+            strawberry_seeds: [0, 0, 0.05, 0.20, 0.75],
+            special1_seeds: [0, 0, 0, 0.15, 0.6, 0.15, 0.1],
         },
         yieldsUpgradeTier3: {
             carrot_seeds: [0, 0, 0, 0.2, 0.6, 0.1, 0.1],
@@ -66,7 +69,8 @@ module.exports = {
             blueberry_seeds: [0, 0, 0, 0, 0.25, 0.2, 0.35, 0.2],
             grape_seeds: [0, 0, 0, 0, 0.4, 0.4, 0.2],
             oats_seeds: [0, 0, 0.1, 0.2, 0.2, 0.3, 0.2],
-            strawberry_seeds: [0, 0, 0.2, 0.2, 0.2, 0.2, 0.2]
+            strawberry_seeds: [0, 0, 0.2, 0.2, 0.2, 0.2, 0.2],
+            special1_seeds: [0, 0, 0, 0.1, 0.3, 0.4, 0.1, 0.1],
         },
         yieldsUpgradeTier4: {
             carrot_seeds: [0, 0, 0, 0.05, 0.55, 0.15, 0.25],
@@ -83,7 +87,8 @@ module.exports = {
             blueberry_seeds: [0, 0, 0, 0, 0, 0.1, 0.60, 0.3],
             grape_seeds: [0, 0, 0, 0, 0.2, 0.4, 0.3, 0.1],
             oats_seeds: [0, 0, 0, 0.1, 0.2, 0.4, 0.2, 0.1],
-            strawberry_seeds: [0, 0, 0, 0.2, 0.35, 0.25, 0.15, 0.05]
+            strawberry_seeds: [0, 0, 0, 0.2, 0.35, 0.25, 0.15, 0.05],
+            special1_seeds: [0, 0, 0, 0, 0.2, 0.4, 0.2, 0.2],
         }
     },
     produceProbabilities: {

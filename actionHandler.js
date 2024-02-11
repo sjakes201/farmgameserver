@@ -334,6 +334,10 @@ const handleAction = async (ws, MESSAGE_ID, action, params) => {
                 let apbooData = await actions.activatePlayerBoost(ws,params);
                 ws.send(JSON.stringify({ action: 'activatePlayerBoost', MESSAGE_ID, body: apbooData }));
                 break;
+            case 'getSpecialLeaderboard':
+                let gslData = await actions.getSpecialLeaderboard(ws, params);
+                ws.send(JSON.stringify({ action: 'getSpecialLeaderboard', MESSAGE_ID, body: gslData }));
+                break;
         }
     } catch (error) {
         console.log(error)
