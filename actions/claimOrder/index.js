@@ -96,6 +96,10 @@ module.exports = async function (ws, actionData) {
                 for (let j = 0; j < levelUnlocks[levelThresholds[i]].length; ++j) {
                     // for all goods in this threshold
                     let item = levelUnlocks[levelThresholds[i]][j];
+                    if(item === 'multiplant' || item === 'multiharvest' || item === 'special1_seeds') {
+                        // not valid order goods
+                        continue;
+                    }
                     if (CONSTANTS.Permits.deluxeCrops.includes(item) && !deluxePermit) {
                         // is deluxe and you don't have the permit
                         continue;

@@ -45,23 +45,16 @@ module.exports = async function (ws, actionData) {
     try {
         connection = await poolPromise;
         let preRequest = new sql.Request(connection)
+        preRequest.multiple = true;
         preRequest.input(`UserID`, sql.Int, UserID);
         // get unlocks info
         let currentOrders = await preRequest.query(`SELECT * FROM ORDERS WHERE UserID = @UserID`)
 
         let userQuery = await preRequest.query(`
             SELECT 
-                TM.townID, 
-                P.XP,
-                TP.orderRefreshLevel
-            FROM 
-                TownMembers TM
-            INNER JOIN 
-                TownPurchases TP ON TP.townID = TM.townID
-            INNER JOIN
-                Profiles P ON P.UserID = TM.UserID
-            WHERE 
-                TM.UserID = @UserID;
+                XP
+            FROM Profiles 
+            WHERE UserID = @UserID
             SELECT * 
             FROM 
                 Upgrades 
@@ -79,7 +72,6 @@ module.exports = async function (ws, actionData) {
         const levels = Object.keys(CONSTANTS.levelUnlocks);
         // xpUnlocks has what you unlock at every XP threshold
         const levelUnlocks = CONSTANTS.levelUnlocks;
-
         let playerLevel = calcLevel(XP);
 
         for (let i = 0; i < levels.length; ++i) {
@@ -87,8 +79,13 @@ module.exports = async function (ws, actionData) {
             if (playerLevel >= levels[i]) {
                 // if you have unlocked this threshold
                 for (let j = 0; j < levelUnlocks[levels[i]].length; ++j) {
+                    
                     // for all goods in this threshold
                     let item = levelUnlocks[levels[i]][j];
+                    if(item === 'multiplant' || item === 'multiharvest' || item === 'special1_seeds') {
+                        // not valid order goods
+                        continue;
+                    }
                     if (CONSTANTS.Permits.deluxeCrops.includes(item) && !deluxePermit) {
                         // is deluxe and you don't have the permit
                         continue;
@@ -103,6 +100,7 @@ module.exports = async function (ws, actionData) {
                         unlockedGoods.push(CONSTANTS.SeedCropMap[item][0])
                     } else {
                         // is an animal as one word "ANIMAL"
+                        console.log(item)
                         unlockedGoods.push(UPGRADES.AnimalProduceMap0[item][0])
                     }
                 }
