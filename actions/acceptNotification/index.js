@@ -24,6 +24,7 @@ module.exports = async function (ws, actionData) {
         }
     }
 
+    
     let connection;
     let transaction;
     try {
@@ -77,6 +78,45 @@ module.exports = async function (ws, actionData) {
                 return {
                     success: true,
                     newPremiumCurrency: newAmount
+                }
+            }
+
+
+            if (notifType === "EVENT_REWARD") {
+                let rewardJSON = notificationsQuery.recordset[0].Message;
+                let rewardObj = JSON.parse(rewardJSON);
+                let rewardIdentified = false;
+                let rewardData = rewardObj;
+                // Iterate through all reward types that could be in the login reward, giving them if they exist
+                // Premium currency reward
+                if (rewardData.hasOwnProperty("PremiumCurrency")) {
+                    let premiumCurrency = rewardData.PremiumCurrency;
+                    if (Number.isInteger(premiumCurrency) && premiumCurrency > 0) {
+                        let givePremium = await request.query(`
+                        UPDATE Profiles SET premiumCurrency = premiumCurrency + ${premiumCurrency} WHERE UserID = @UserID
+                    `)
+                        rewardIdentified = true;
+                    }
+                }
+                // Profile picture reward
+                if (rewardData.hasOwnProperty("pfpUnlockID")) {
+                    let pfpUnlockID = rewardData.pfpUnlockID;
+                    giveUnlockID(UserID, pfpUnlockID)
+                    rewardIdentified = true;
+                }
+
+                if (rewardIdentified) {
+                    await transaction.commit();
+                    return {
+                        success: true,
+                        reward: rewardData
+                    }
+                } else {
+                    await transaction.rollback();
+                    return {
+                        success: false,
+                        message: "Invalid event reward data"
+                    }
                 }
             }
 
