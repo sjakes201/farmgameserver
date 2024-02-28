@@ -24,6 +24,7 @@ module.exports = async function (ws, actionData) {
         }
     }
 
+    
     let connection;
     let transaction;
     try {
