@@ -338,6 +338,10 @@ const handleAction = async (ws, MESSAGE_ID, action, params) => {
                 let gslData = await actions.getSpecialLeaderboard(ws, params);
                 ws.send(JSON.stringify({ action: 'getSpecialLeaderboard', MESSAGE_ID, body: gslData }));
                 break;
+            case 'buyProfilePic':
+                let bpData = await actions.buyProfilePic(ws, params);
+                ws.send(JSON.stringify({ action: 'buyProfilePic', MESSAGE_ID, body: bpData }));
+                break;
         }
     } catch (error) {
         console.log(error)

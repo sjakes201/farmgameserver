@@ -116,8 +116,6 @@ function setupWebSocket(wss) {
                     console.log("terminating ", client.UserID);
                     return client.terminate();
                 }
-                console.log("pinging ", client.UserID)
-
                 client.ping();
             });
         }, 30000);

@@ -410,5 +410,22 @@ module.exports = {
       llama_wool: 12,
       kiwi_egg: 12,
     },
+    pfpInfo: {
+      zeus: { name: "Zeus", cost: 1500, unlockID: 30 },
+      dragon_man: { name: "Dragon Man", cost: 1500, unlockID: 31 },
+      wizard: { name: "Wizard", cost: 1500, unlockID: 32 },
+      spanish_dueler: { name: "Dueler", cost: 750, unlockID: 33 },
+      ninja: { name: "Ninja", cost: 750, unlockID: 34 },
+      helmet_warrior: { name: "Warrior", cost: 750, unlockID: 35 },
+      doctor_stethoscope: { name: "Doctor", cost: 600, unlockID: 36 },
+      market_analyst: { name: "Market Analyst", cost: 500, unlockID: 37 },
+      chef: { name: "Chef", cost: 450, unlockID: 38 },
+      baseball_player: { name: "Baseball Player", cost: 300, unlockID: 39 },
+      soccer_player: { name: "Soccer Player", cost: 300, unlockID: 40 },
+      football_player: { name: "Football Player", cost: 300, unlockID: 41 },
+      fighter_red: { name: "Red Fighter", cost: 400, unlockID: 42 },
+      fighter_blue: { name: "Blue Fighter", cost: 400, unlockID: 43 },
+      fighter_purple: { name: "Purple Fighter", cost: 400, unlockID: 44 },
+    }
   };
   
