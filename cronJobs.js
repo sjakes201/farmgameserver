@@ -5,11 +5,13 @@ const clearTempLeaderboardTIMER = require('./serverActions/clearTempLeaderboardT
 const transferInactiveLeaders = require('./serverActions/transferInactiveLeaders/index');
 const updateMarketMultipliers = require('./serverActions/updateMarketMultipliers/index')
 const resetExpiredIndivGoals = require('./serverActions/resetExpiredIndivGoals/index')
+// const distributeEventRewards = require('./serverActions/distributeEventRewards/index')
 
 const cron = require('node-cron');
 
 // Schedule tasks
 const scheduleTasks = () => {
+    // distributeEventRewards()
     // Run clear temp leaderboard midnight Sunday
     cron.schedule('59 23 * * SUN', async () => {
         try {
