@@ -356,9 +356,8 @@ module.exports = async function (ws, actionData) {
                     let boostChange = 1 + boostPercent;
                     chance *= boostChange;
                 }
-
                 if (getCurrentSeason() === 'winter') {
-                    chance *= 1 + CONSTANTS.VALUES.WINTER_PARTS_BUFF
+                    chance += 0.01;
                 }
 
 
