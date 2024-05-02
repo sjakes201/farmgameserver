@@ -342,6 +342,10 @@ const handleAction = async (ws, MESSAGE_ID, action, params) => {
                 let bpData = await actions.buyProfilePic(ws, params);
                 ws.send(JSON.stringify({ action: 'buyProfilePic', MESSAGE_ID, body: bpData }));
                 break;
+            case 'discardItem':
+                let diData = await actions.discardItem(ws, params);
+                ws.send(JSON.stringify({ action: 'discardItem', MESSAGE_ID, body: diData }));
+                break;
         }
     } catch (error) {
         console.log(error)
